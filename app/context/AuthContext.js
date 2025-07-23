@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useState, useEffect } from 'react';
+import { getItem, setItem, deleteItem } from './storageHelper'; // adjust path as needed
 
 export const AuthContext = createContext();
 
@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const loadAuth = async () => {
-      const token = await SecureStore.getItemAsync('admin_token');
+      const token = await getItem('admin_token');
       if (token === 'logged_in') {
         setIsAuthenticated(true);
       }
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     if (username === 'Admindriftyandswifty' && password === 'driftandsip@123') {
-      await SecureStore.setItemAsync('admin_token', 'logged_in');
+      await setItem('admin_token', 'logged_in');
       setIsAuthenticated(true);
     } else {
       alert('Invalid credentials');
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('admin_token');
+    await deleteItem('admin_token');
     setIsAuthenticated(false);
   };
 
