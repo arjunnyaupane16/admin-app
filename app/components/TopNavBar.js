@@ -1,6 +1,6 @@
+import { useRouter } from 'expo-router';
 import { useContext } from 'react';
 import { Button, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { AuthContext } from '../context/AuthContext';
 
 export default function TopNavBar() {
@@ -9,7 +9,7 @@ export default function TopNavBar() {
 
   const handleLogout = () => {
     logout();
-    router.replace('/login'); // Redirect to login after logout
+    router.replace('/login'); // redirect to login after logout
   };
 
   return (

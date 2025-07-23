@@ -1,38 +1,48 @@
-import { Stack } from 'expo-router';
-import { useContext } from 'react';
-import { Platform } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { useContext, useEffect, useState } from 'react';
 import { AuthContext, AuthProvider } from './context/AuthContext';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <LayoutContent />
-      {Platform.OS !== 'web' && <Toast />}
+      <AuthGate />
     </AuthProvider>
   );
 }
 
-function LayoutContent() {
+function AuthGate() {
   const { isAuthenticated } = useContext(AuthContext);
+  const segments = useSegments();
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
 
-  return (
-    <Stack>
-      {!isAuthenticated ? (
-        <>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="signup" options={{ headerShown: false }} />
-          <Stack.Screen name="forgot" options={{ headerShown: false }} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="orders" />
-          <Stack.Screen name="order-details" />
-          <Stack.Screen name="dashboard" />
-          <Stack.Screen name="deleted-orders" options={{ headerShown: false }} />
-        </>
-      )}
-    </Stack>
-  );
+  useEffect(() => {
+    const checkAuth = async () => {
+      // Wait a tick to ensure layout is mounted
+      setTimeout(() => {
+        const inAuthGroup = segments[0] === 'login';
+
+        if (!isAuthenticated && !inAuthGroup) {
+          router.replace('/login');
+        } else if (isAuthenticated && inAuthGroup) {
+          router.replace('/');
+        }
+
+        setIsReady(true);
+      }, 10); // Short delay to ensure mounting
+    };
+
+    checkAuth();
+  }, [isAuthenticated, segments]);
+
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return <Slot />;
 }
