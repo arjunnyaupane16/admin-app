@@ -1,37 +1,47 @@
-import { Stack } from 'expo-router';
-import { useContext } from 'react';
-import Toast from 'react-native-toast-message';
-import { AuthProvider, AuthContext } from './context/AuthContext'; // Adjust path
+import { useContext, useState } from 'react';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AuthContext } from '../context/AuthContext';
 
-export default function RootLayout() {
+export default function LoginScreen() {
+  const { login } = useContext(AuthContext);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
   return (
-    <AuthProvider>
-      <LayoutContent />
-      <Toast />
-    </AuthProvider>
+    <View style={styles.container}>
+      <Text style={styles.title}>Admin Login</Text>
+      <TextInput
+        placeholder="Username"
+        style={styles.input}
+        onChangeText={setUsername}
+        autoCapitalize="none"
+      />
+      <TextInput
+        placeholder="Password"
+        style={styles.input}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <Button title="Login" onPress={() => login(username, password)} />
+    </View>
   );
 }
 
-function LayoutContent() {
-  const { isAuthenticated } = useContext(AuthContext);
-
-  return (
-    <Stack>
-      {!isAuthenticated ? (
-        <>
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="signup" options={{ headerShown: false }} />
-          <Stack.Screen name="forgot" options={{ headerShown: false }} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="orders" />
-          <Stack.Screen name="order-details" />
-          <Stack.Screen name="dashboard" />
-          <Stack.Screen name="deleted-orders" options={{ headerShown: false }} />
-        </>
-      )}
-    </Stack>
-  );
-}
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    marginTop: 100,
+  },
+  title: {
+    fontSize: 24,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    marginBottom: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#aaa',
+    borderRadius: 5,
+  },
+});
