@@ -1,6 +1,7 @@
+// context/AuthContext.js
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { createContext, useEffect, useState } from 'react';
+import { getItem, setItem, deleteItem } from '../utils/storage';
 
 export const AuthContext = createContext();
 
@@ -11,8 +12,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const storedAuth = await SecureStore.getItemAsync('authToken');
-      const storedUser = await SecureStore.getItemAsync('userData');
+      const storedAuth = await getItem('authToken');
+      const storedUser = await getItem('userData');
 
       if (storedAuth && storedUser) {
         setIsAuthenticated(true);
@@ -20,7 +21,6 @@ export const AuthProvider = ({ children }) => {
       } else {
         setIsAuthenticated(false);
         setUser(null);
-        // Don't navigate here — let layout or screen handle redirection
       }
     } catch (error) {
       console.error('Error checking auth:', error);
@@ -48,8 +48,8 @@ export const AuthProvider = ({ children }) => {
           lastLogin: new Date().toISOString()
         };
 
-        await SecureStore.setItemAsync('authToken', 'dummy-auth-token');
-        await SecureStore.setItemAsync('userData', JSON.stringify(userData));
+        await setItem('authToken', 'dummy-auth-token');
+        await setItem('userData', JSON.stringify(userData));
 
         setIsAuthenticated(true);
         setUser(userData);
@@ -68,8 +68,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await SecureStore.deleteItemAsync('authToken');
-      await SecureStore.deleteItemAsync('userData');
+      await deleteItem('authToken');
+      await deleteItem('userData');
       setIsAuthenticated(false);
       setUser(null);
       router.replace('/login');
