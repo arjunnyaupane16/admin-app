@@ -1,6 +1,8 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
   RefreshControl,
   Text,
@@ -8,10 +10,12 @@ import {
   View,
 } from 'react-native';
 import OrderCard from './components/OrderCard';
+import TopNavBar from './components/TopNavBar';
 import styles from './styles/OrdersStyles';
 import { fetchOrders } from './utils/orderApi';
 
 export default function OrdersScreen() {
+  
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,10 +24,26 @@ export default function OrdersScreen() {
 
   const flatListRef = useRef(null);
   const prevOrdersRef = useRef([]);
+  const router = useRouter();
+
+  // ✅ Handle hardware back button
+  useEffect(() => {
+    const backAction = () => {
+      router.back(); // Navigate back to previous screen
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const loadOrders = async () => {
     try {
-const data = await fetchOrders({ excludeOrderCardDeleted: true }); // ✅ Fix: excludes OrderCard-deleted
+      const data = await fetchOrders({ excludeOrderCardDeleted: true });
 
       // Detect new order IDs if needed
       const prevIds = prevOrdersRef.current.map((o) => o._id);
@@ -60,16 +80,13 @@ const data = await fetchOrders({ excludeOrderCardDeleted: true }); // ✅ Fix: e
   };
 
   const handleLiveOrdersPress = async () => {
-    // Toggle summary visible state
     setSummaryVisible((prev) => {
       if (!prev) {
-        // If showing summary now, reset filter to 'all'
         setFilter('all');
         flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
         loadOrders();
         return true;
       } else {
-        // Hide summary
         return false;
       }
     });
@@ -77,18 +94,13 @@ const data = await fetchOrders({ excludeOrderCardDeleted: true }); // ✅ Fix: e
 
   const confirmedCount = orders.filter((o) => o.status === 'confirmed').length;
   const pendingCount = orders.filter((o) => o.status === 'pending').length;
-const filteredOrders = orders.filter((order) => {
-  // Exclude orders deleted by admin
-  if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
 
-  // Apply filter if not 'all'
-  if (filter !== 'all' && order.status !== filter) return false;
+  const filteredOrders = orders.filter((order) => {
+    if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
+    if (filter !== 'all' && order.status !== filter) return false;
+    return true;
+  });
 
-  return true;
-});
-
-
-  // Show only non-deleted orders from last 24 hours
   const now = new Date();
   const activeOrders = filteredOrders.filter((order) => {
     const createdAt = new Date(order.createdAt);
@@ -99,6 +111,7 @@ const filteredOrders = orders.filter((order) => {
 
   return (
     <View style={styles.container}>
+
       {/* 🔴 Live Orders Header */}
       <TouchableOpacity
         onPress={handleLiveOrdersPress}
@@ -114,7 +127,7 @@ const filteredOrders = orders.filter((order) => {
         </View>
       </TouchableOpacity>
 
-      {/* ✅ Summary Filter Row (toggle visible) */}
+      {/* ✅ Summary Filter Row */}
       {summaryVisible && (
         <View style={styles.summaryFilterRow}>
           <TouchableOpacity onPress={() => setFilter('confirmed')}>

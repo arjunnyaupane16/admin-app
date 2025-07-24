@@ -1,5 +1,4 @@
-// app/screens/TotalOrdersScreen.js
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   FlatList,
@@ -8,14 +7,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import OrderCard from './components/OrderCard';
 
 const TotalOrdersScreen = () => {
+
+
+  const router = useRouter();
   const { orders: ordersString, dateFilterType } = useLocalSearchParams();
   const orders = JSON.parse(ordersString || '[]');
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // ✅ Updated filtering logic
   const filteredOrders = orders.filter((order) => {
     if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
     if (order.status === 'deleted' && order.deletedFrom === 'orderCard' && activeFilter !== 'deleted') return false;
@@ -26,6 +28,11 @@ const TotalOrdersScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Text style={styles.backText}>← Back</Text>
+      </TouchableOpacity>
+
       <Text style={styles.title}>Total Orders ({dateFilterType || 'All'})</Text>
 
       {/* Filter Buttons */}
@@ -59,6 +66,8 @@ const TotalOrdersScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  backButton: { marginBottom: 8 },
+  backText: { color: 'purple', fontSize: 16 },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 12 },
   filterContainer: { flexDirection: 'row', marginBottom: 12 },
   filterButton: {

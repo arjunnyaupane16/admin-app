@@ -1,13 +1,12 @@
-// app/screens/DashboardScreen.js
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useFocusEffect } from 'expo-router';
 import * as FileSystem from 'expo-file-system';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   Dimensions,
   FlatList,
   Modal,
@@ -21,7 +20,7 @@ import {
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import DashboardStyles from '../styles/DashboardStyles';
 import { deleteOrder, fetchAdminOrders } from '../utils/orderApi';
-
+import TopNavBar from '../components/TopNavBar';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -41,56 +40,55 @@ export default function DashboardIndexScreen() {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
   const [dateFilterType, setDateFilterType] = useState('daily');
+
   const styles = DashboardStyles;
-
-  useEffect(() => {
-    loadOrders();
-  }, [selectedDate, dateFilterType]);
-
+  // Load orders when screen focused
   useFocusEffect(
     useCallback(() => {
       loadOrders();
     }, [selectedDate, dateFilterType])
   );
+
+  // Filter logic
   useEffect(() => {
-  applyFilters();
-}, [orders, search, activeFilter]);
+    applyFilters();
+  }, [orders, search, activeFilter]);
+
+  // Load all orders
   const loadOrders = async () => {
     try {
       setLoading(true);
-const allOrders = await fetchAdminOrders(); // includes all orders for filtering
+      const allOrders = await fetchAdminOrders();
 
-// ✅ Step 1: Filter all orders by selected date range (daily/weekly/monthly/yearly)
-let dateFilteredOrders = allOrders.filter(order => {
-  const createdAt = new Date(order.createdAt);
-  switch (dateFilterType) {
-    case 'daily':
-      return isSameDay(createdAt, selectedDate);
-    case 'weekly':
-      return isSameWeek(createdAt, selectedDate);
-    case 'monthly':
-      return isSameMonth(createdAt, selectedDate);
-    case 'yearly':
-      return isSameYear(createdAt, selectedDate);
-    default:
-      return isSameDay(createdAt, selectedDate);
-  }
-});
+      // Filter by date range
+      let dateFilteredOrders = allOrders.filter(order => {
+        const createdAt = new Date(order.createdAt);
+        switch (dateFilterType) {
+          case 'daily':
+            return isSameDay(createdAt, selectedDate);
+          case 'weekly':
+            return isSameWeek(createdAt, selectedDate);
+          case 'monthly':
+            return isSameMonth(createdAt, selectedDate);
+          case 'yearly':
+            return isSameYear(createdAt, selectedDate);
+          default:
+            return isSameDay(createdAt, selectedDate);
+        }
+      });
 
-// ✅ Step 2: For display → exclude soft-deleted (admin) from date-filtered list
-const visibleOrders = dateFilteredOrders.filter(order => {
-  return !(order.status === 'deleted' && order.deletedFrom === 'admin');
-});
-setOrders(visibleOrders);
+      // Exclude soft-deleted from display
+      const visibleOrders = dateFilteredOrders.filter(order => {
+        return !(order.status === 'deleted' && order.deletedFrom === 'admin');
+      });
+      setOrders(visibleOrders);
 
-// ✅ Step 3: Compute stats from date-filtered full list (including deleted)
-const statsData = computeStats(dateFilteredOrders);
-setStats(statsData);
-
-
+      // Compute stats from full filtered list
+      const statsData = computeStats(dateFilteredOrders);
+      setStats(statsData);
 
     } catch (err) {
-      console.error('❌ Error loading orders:', err);
+      console.error('Error loading orders:', err);
       Alert.alert('Error', 'Failed to load orders');
     } finally {
       setLoading(false);
@@ -98,7 +96,7 @@ setStats(statsData);
     }
   };
 
-  // Date comparison functions remain the same
+  // Date comparison functions
   const isSameDay = (date1, date2) => {
     return (
       date1.getDate() === date2.getDate() &&
@@ -122,26 +120,28 @@ setStats(statsData);
 
   const isSameYear = (date1, date2) => {
     return date1.getFullYear() === date2.getFullYear();
-  };const computeStats = (orders) => {
-  const confirmed = orders.filter(o => o.status === 'confirmed');
-  const pending = orders.filter(o => o.status === 'pending');
-  const deleted = orders.filter(o => o.status === 'deleted' && o.deletedFrom === 'admin');
-  const earnings = confirmed.reduce((sum, o) => sum + o.totalAmount, 0);
-  const loss = deleted.reduce((sum, o) => sum + o.totalAmount, 0);
-
-  return {
-    total: orders.length,
-    confirmed: confirmed.length,
-    pending: pending.length,
-    deleted: deleted.length,
-    earnings,
-    loss,
-    popularItems: getPopularItems(orders),
-    orderTypes: getOrderTypes(orders),
-    hourlyData: getHourlyData(orders),
   };
-};
-  // Other helper functions remain the same
+
+  const computeStats = (orders) => {
+    const confirmed = orders.filter(o => o.status === 'confirmed');
+    const pending = orders.filter(o => o.status === 'pending');
+    const deleted = orders.filter(o => o.status === 'deleted' && o.deletedFrom === 'admin');
+    const earnings = confirmed.reduce((sum, o) => sum + o.totalAmount, 0);
+    const loss = deleted.reduce((sum, o) => sum + o.totalAmount, 0);
+
+    return {
+      total: orders.length,
+      confirmed: confirmed.length,
+      pending: pending.length,
+      deleted: deleted.length,
+      earnings,
+      loss,
+      popularItems: getPopularItems(orders),
+      orderTypes: getOrderTypes(orders),
+      hourlyData: getHourlyData(orders),
+    };
+  };
+
   const getPopularItems = (orders) => {
     const itemCounts = {};
     orders.forEach(order => {
@@ -249,7 +249,6 @@ setStats(statsData);
     }
   };
 
-  // Render functions remain the same
   const renderOrderItem = ({ item }) => (
     <TouchableOpacity
       style={[
@@ -376,9 +375,10 @@ setStats(statsData);
     </Modal>
   );
 
-  // Main render function remains the same
   return (
     <View style={styles.container}>
+
+
       <Text style={styles.heading}>📊 Restaurant Dashboard</Text>
 
       <View style={styles.dateFilterContainer}>
@@ -420,10 +420,10 @@ setStats(statsData);
         >
           {/* Stats Section */}
           <View style={styles.statsContainer}>
-            <StatButton label="Total" count={stats.total} filterKey="all" icon="📦" />
-            <StatButton label="Confirmed" count={stats.confirmed} filterKey="confirmed" icon="✅" />
-            <StatButton label="Pending" count={stats.pending} filterKey="pending" icon="⌛" />
-            <StatButton label="Deleted" count={stats.deleted} filterKey="deleted" icon="❌" />
+            <StatButton label="Total" count={stats.total} filterKey="all" />
+            <StatButton label="Confirmed" count={stats.confirmed} filterKey="confirmed"  />
+            <StatButton label="Pending" count={stats.pending} filterKey="pending" />
+            <StatButton label="Deleted" count={stats.deleted} filterKey="deleted"  />
           </View>
 
           {/* Charts Section */}

@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import OrderCard from './components/OrderCard';
+
 import {
   emptyTrash,
   fetchDeletedOrders,
@@ -43,12 +45,6 @@ const DeletedOrdersScreen = () => {
     );
   };
 
-  /**
-   * Generic confirm handler for bulk restore / delete.
-   * @param {'Restore'|'Delete Permanently'} actionLabel
-   * @param {(id:string)=>Promise<any>} actionFn
-   * @param {string} successMessage
-   */
   const confirmAction = (actionLabel, actionFn, successMessage) => {
     const targetOrders = selectedOrders.length
       ? selectedOrders
@@ -70,7 +66,6 @@ const DeletedOrdersScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Process sequentially; could be Promise.all if backend allows parallel deletes.
               for (const id of targetOrders) {
                 await actionFn(id);
               }
@@ -96,7 +91,6 @@ const DeletedOrdersScreen = () => {
       'Orders permanently deleted.'
     );
 
-  // Optional: one-tap Empty Trash (ignores selection)
   const deleteAll = () => {
     if (!deletedOrders.length) return;
     Alert.alert(
@@ -127,9 +121,7 @@ const DeletedOrdersScreen = () => {
       order={item}
       isSelected={selectedOrders.includes(item._id)}
       onActionComplete={loadDeletedOrders}
-      onLongPress={() => toggleSelect(item._id)} // ✅ pass the ID
-    // If OrderCard itself has internal delete/restore buttons, be sure THEY call
-    // restoreOrder / permanentlyDeleteOrder as appropriate for trashed context.
+      onLongPress={() => toggleSelect(item._id)}
     />
   );
 
@@ -178,7 +170,7 @@ const DeletedOrdersScreen = () => {
         </View>
       )}
 
-      {/* Optional global trash clear button (place elsewhere in your UI if you prefer) */}
+      {/* Optional: FAB to empty trash */}
       {/* {anyDeleted && (
         <TouchableOpacity style={styles.emptyTrashFab} onPress={deleteAll}>
           <Text style={styles.emptyTrashFabText}>Empty Trash</Text>
@@ -248,8 +240,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Optional FAB style for "Empty Trash"
   emptyTrashFab: {
     position: 'absolute',
     right: 16,

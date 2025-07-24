@@ -1,22 +1,29 @@
+// app/styles/HomeStyles.js
 import { StyleSheet } from 'react-native';
 
-export default StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#fff',
     flexGrow: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    paddingVertical: 50,
+    paddingHorizontal: 20,
   },
   logo: {
     width: 200,
     height: 200,
-    marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 30,
-    textAlign: 'center',
+    color: '#333',
+  },
+  buttonContainer: {
+    marginVertical: 10,
+    width: '80%',
   },
 });
+
+export default styles;

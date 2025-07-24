@@ -1,27 +1,26 @@
+// app/styles/LoginStyles.js
 import { StyleSheet } from 'react-native';
 
-export default StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   title: {
-    fontSize: 24,
-    marginBottom: 24,
-    textAlign: 'center',
+    fontSize: 26,
     fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#6a1b9a',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
+    padding: 12,
+    marginBottom: 15,
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-  },
-  link: {
-    color: 'blue',
-    marginTop: 10,
-    textAlign: 'center',
+    backgroundColor: '#fff',
   },
 });

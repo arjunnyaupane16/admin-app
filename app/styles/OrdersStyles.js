@@ -3,8 +3,13 @@ import { StyleSheet } from 'react-native';
 
 const OrdersStyles = StyleSheet.create({
   // Base Card Styles
+  container: {
+    flex: 1,
+    backgroundColor: '#fff', // White background
+  },
+
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'fff',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
@@ -475,22 +480,22 @@ const OrdersStyles = StyleSheet.create({
     color: '#333',
   },
   aboutToDeleteCard: {
-  borderWidth: 2,
-  borderColor: '#FF9800', // Warning Orange
-  backgroundColor: '#FFF8E1', // Light Yellow BG
-},
-// Highlight for deleted + selected orders
-deletedSelectedCard: {
-  backgroundColor: '#FEF2F2',  // Light red background
-  borderColor: '#DC2626',      // Red border
-  borderWidth: 1.5,
-},
-selectedCard: {
-  borderWidth: 2,
-  borderColor: '#2196F3',
-  backgroundColor: '#E3F2FD',
-  borderRadius: 12,
-},
+    borderWidth: 2,
+    borderColor: '#FF9800', // Warning Orange
+    backgroundColor: '#FFF8E1', // Light Yellow BG
+  },
+  // Highlight for deleted + selected orders
+  deletedSelectedCard: {
+    backgroundColor: '#FEF2F2',  // Light red background
+    borderColor: '#DC2626',      // Red border
+    borderWidth: 1.5,
+  },
+  selectedCard: {
+    borderWidth: 2,
+    borderColor: '#2196F3',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+  },
 
 
 
