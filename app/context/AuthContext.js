@@ -1,7 +1,6 @@
-// context/AuthContext.js
 import { router } from 'expo-router';
 import { createContext, useEffect, useState } from 'react';
-import { getItem, setItem, deleteItem } from '../utils/storage';
+import { deleteItem, getItem, setItem } from '../utils/storage';
 
 export const AuthContext = createContext();
 
@@ -15,9 +14,19 @@ export const AuthProvider = ({ children }) => {
       const storedAuth = await getItem('authToken');
       const storedUser = await getItem('userData');
 
+      console.log('checkAuthStatus - storedAuth:', storedAuth);
+      console.log('checkAuthStatus - storedUser:', storedUser);
+
       if (storedAuth && storedUser) {
-        setIsAuthenticated(true);
-        setUser(JSON.parse(storedUser));
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Failed to parse storedUser JSON:', error);
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } else {
         setIsAuthenticated(false);
         setUser(null);
@@ -38,14 +47,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setIsLoading(true);
     try {
-      // Simulate API call
+      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 800));
 
       if (username === 'Admin' && password === 'admin123') {
         const userData = {
           username,
           role: 'admin',
-          lastLogin: new Date().toISOString()
+          lastLogin: new Date().toISOString(),
         };
 
         await setItem('authToken', 'dummy-auth-token');
@@ -53,9 +62,12 @@ export const AuthProvider = ({ children }) => {
 
         setIsAuthenticated(true);
         setUser(userData);
+
+        console.log('Login successful:', userData);
         return true;
       }
 
+      console.log('Login failed: invalid credentials');
       return false;
     } catch (error) {
       console.error('Login error:', error);

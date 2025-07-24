@@ -1,4 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import 'react-native-gesture-handler';
+
 import { useState } from 'react';
 import {
   FlatList,

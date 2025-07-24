@@ -8,10 +8,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import TopNavBar from './components/TopNavBar'; // ✅ Import TopNavBar
+import 'react-native-gesture-handler';
+import { TapGestureHandler } from 'react-native-gesture-handler';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function HomeScreen() {
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [])
+    }, [router])
   );
 
   const features = [
@@ -69,7 +69,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <TopNavBar title="Admin Panel" /> {/* ✅ Add TopNavBar */}
+      {/* TopNavBar removed here to avoid duplicate */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Welcome Section */}
         <View style={styles.welcomeContainer}>
@@ -88,19 +88,20 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
           {features.map((feature, index) => (
-            <TouchableOpacity
+            <TapGestureHandler
               key={index}
-              style={[styles.actionCard, { backgroundColor: feature.color }]}
-              onPress={() => router.push(feature.route)}
+              onActivated={() => router.push(feature.route)}
             >
-              <MaterialIcons
-                name={feature.icon}
-                size={30}
-                color="#fff"
-                style={styles.actionIcon}
-              />
-              <Text style={styles.actionTitle}>{feature.title}</Text>
-            </TouchableOpacity>
+              <View style={[styles.actionCard, { backgroundColor: feature.color }]}>
+                <MaterialIcons
+                  name={feature.icon}
+                  size={30}
+                  color="#fff"
+                  style={styles.actionIcon}
+                />
+                <Text style={styles.actionTitle}>{feature.title}</Text>
+              </View>
+            </TapGestureHandler>
           ))}
         </View>
 

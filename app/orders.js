@@ -10,12 +10,10 @@ import {
   View,
 } from 'react-native';
 import OrderCard from './components/OrderCard';
-import TopNavBar from './components/TopNavBar';
 import styles from './styles/OrdersStyles';
 import { fetchOrders } from './utils/orderApi';
-
 export default function OrdersScreen() {
-  
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
