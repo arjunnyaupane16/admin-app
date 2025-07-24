@@ -15,12 +15,10 @@ import { AuthContext } from '../context/AuthContext';
 export default function TopNavBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, isAuthenticated } = useContext(AuthContext);
+  const { logout, isAuthenticated, isLoading } = useContext(AuthContext);
 
-  // Check if route is active for highlighting
   const isActive = (route) => pathname === route || pathname.startsWith(route + '/');
 
-  // Back handler logic
   const handleBack = () => {
     if (pathname === '/index' || pathname === '/') {
       if (Platform.OS === 'android') {
@@ -28,12 +26,10 @@ export default function TopNavBar() {
       }
       return true;
     }
-
     router.push('/index');
     return true;
   };
 
-  // Register back button for Android
   useEffect(() => {
     if (Platform.OS === 'android') {
       const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBack);
@@ -41,7 +37,6 @@ export default function TopNavBar() {
     }
   }, [pathname]);
 
-  // Hide navbar on login
   if (pathname === '/login' || !pathname) return null;
 
   return (
@@ -89,7 +84,8 @@ export default function TopNavBar() {
           <Text style={styles.navText}>Orders</Text>
         </TouchableOpacity>
 
-        {isAuthenticated && (
+        {/* ✅ Logout button shown only when authenticated and not loading */}
+        {!isLoading && isAuthenticated && (
           <TouchableOpacity onPress={logout} style={styles.navItem}>
             <Ionicons name="log-out" size={22} color="rgba(255,255,255,0.7)" />
             <Text style={styles.navText}>Logout</Text>
