@@ -57,7 +57,7 @@ export default function TopNavBar() {
 
       {/* Center Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>Drift and Sip Cafe</Text>
+        <Text style={styles.title}>Drift and Sip</Text>
       </View>
 
       {/* Right Section: Nav Buttons */}

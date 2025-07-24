@@ -110,7 +110,7 @@ export default function HomeScreen() {
         <View style={styles.activityCard}>
           <View style={styles.activityItem}>
             <MaterialIcons name="local-cafe" size={24} color="#6a1b9a" />
-            <Text style={styles.activityText}>25 new orders today</Text>
+            <Text style={styles.activityText}>5 new orders today</Text>
           </View>
           <View style={styles.activityItem}>
             <MaterialIcons name="attach-money" size={24} color="#6a1b9a" />
