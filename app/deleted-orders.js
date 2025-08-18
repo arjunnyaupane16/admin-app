@@ -13,6 +13,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import API functions
 import {
@@ -241,18 +242,20 @@ const DeletedOrdersScreen = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
+  // Note: avoid full-screen return while loading to prevent black/blank flashes
 
   const anyDeleted = deletedOrders.length > 0;
 
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderErrorState()}
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Deleted Orders</Text>
@@ -274,7 +277,7 @@ const DeletedOrdersScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         )}
         contentContainerStyle={{ paddingBottom: anyDeleted ? 80 : 0 }}
-        ListEmptyComponent={<Text style={styles.empty}>No deleted orders found.</Text>}
+        ListEmptyComponent={renderEmptyState()}
       />
 
       {anyDeleted && (
@@ -295,9 +298,15 @@ const DeletedOrdersScreen = () => {
         </View>
       )}
 
+      {loading && (
+        <View style={styles.loadingOverlay} pointerEvents="none">
+          <ActivityIndicator size="large" color="#1b5e20" />
+        </View>
+      )}
+
       {/* FAB to empty trash */}
       {/* Empty Trash FAB removed as requested */}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -311,9 +320,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   header: {
-    marginBottom: 10,
+    marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
@@ -323,13 +333,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     color: '#64748b',
-    alignSelf: 'center',
+    marginTop: 2,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#ffffffee',
     borderTopWidth: 1,
@@ -342,8 +352,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
@@ -393,15 +403,15 @@ const styles = StyleSheet.create({
   rowAmount: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#1b5e20',
     marginLeft: 8,
   },
   separator: {
     height: 8,
   },
   selectAllBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 6,
     backgroundColor: '#334155',
     alignSelf: 'center',
@@ -412,22 +422,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   button: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    minWidth: 130,
+    minWidth: 140,
     alignItems: 'center',
   },
   restore: {
-    backgroundColor: '#4caf50',
+    backgroundColor: '#2e7d32',
   },
   delete: {
-    backgroundColor: '#f44336',
+    backgroundColor: '#d32f2f',
   },
   buttonText: {
     color: '#fff',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 14,
   },
   empty: {
     textAlign: 'center',
@@ -435,10 +445,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#334155',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(248, 250, 252, 0.6)', // subtle blur-like overlay
   },
   // Styles for removed Empty Trash FAB have been deleted
 });
