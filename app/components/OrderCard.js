@@ -53,7 +53,7 @@ const OrderCard = ({
   };
 
   const [localPaymentStatus, setLocalPaymentStatus] = useState(order.paymentStatus);
-  
+
   // Log order items to inspect structure
   useEffect(() => {
     if (order?.items) {
@@ -87,7 +87,7 @@ const OrderCard = ({
   const panResponderRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  
+
   // Handle layout measurements
   const handleLayout = (event) => {
     // This can be used to get layout measurements if needed
@@ -393,6 +393,7 @@ const OrderCard = ({
             useNativeDriver: true
           }).start(() => {
             alert('Order deleted');
+            try { router.replace('/deleted-orders'); } catch (_) {}
           });
         } catch (error) {
           console.error('Error deleting order:', error);
@@ -436,6 +437,7 @@ const OrderCard = ({
                 useNativeDriver: true
               }).start(() => {
                 Alert.alert('Success', 'Order deleted');
+                try { router.replace('/deleted-orders'); } catch (_) {}
               });
             } catch (error) {
               console.error('Error deleting order:', error);
@@ -517,7 +519,7 @@ const OrderCard = ({
   };
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.orderCard,
         order.status === 'pending' && styles.orderCardPending,
@@ -626,14 +628,14 @@ const OrderCard = ({
               {order.items?.map((item, index) => {
                 // Get size from item (Half/Full)
                 const size = item.size || 'Full'; // Default to Full if size is not specified
-                
+
                 // Clean the item name by removing any size in parentheses
-                const itemName = item.name ? 
+                const itemName = item.name ?
                   item.name.replace(/\s*\(Half|Full\)/i, '').trim() : 'Unnamed Item';
-                
+
                 // Format as "Item Name (Size)"
                 const displayName = `${itemName} (${size})`;
-                
+
                 return (
                   <View key={index} style={styles.orderItem}>
                     <Text style={styles.itemName}>

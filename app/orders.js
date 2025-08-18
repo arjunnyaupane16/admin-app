@@ -132,6 +132,10 @@ export default function OrdersScreen() {
     
     // Update local state
     setOrders(prev => {
+      if (actionType === 'deleted' || updatedOrder.status === 'deleted') {
+        // Optimistically remove from active list
+        return prev.filter(o => o._id !== updatedOrder._id);
+      }
       const updated = prev.map(o => 
         o._id === updatedOrder._id 
           ? { ...o, ...updatedOrder, paymentStatus: 'paid', isPaid: true }

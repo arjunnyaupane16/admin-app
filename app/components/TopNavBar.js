@@ -36,12 +36,6 @@ export default function TopNavBar() {
             resizeMode="contain"
           />
         </View>
-
-        {/* Center Title */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Drift and Sip</Text>
-        </View>
-
         {/* Right Section: Nav Buttons */}
         <View style={styles.rightSection}>
           <TouchableOpacity
@@ -88,7 +82,7 @@ export default function TopNavBar() {
       </Container>
     </View>
   );
-}const styles = StyleSheet.create({
+} const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: '#6a1b9a',
     ...Platform.select({

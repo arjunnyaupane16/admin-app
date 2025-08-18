@@ -82,13 +82,6 @@ export default function HomeScreen() {
       color: '#6a1b9a',
     },
     {
-      title: 'Recycle Bin',
-      description: 'Restore or permanently delete removed orders',
-      icon: 'delete-forever',
-      route: '/deleted-orders',
-      color: '#b00020',
-    },
-    {
       title: 'Menu',
       description: 'Edit your café menu items and categories',
       icon: 'restaurant-menu',
@@ -243,22 +236,22 @@ export default function HomeScreen() {
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginBottom: 30,
     ...Platform.select({
       web: {
         gap: 20,             // ✅ proper spacing on grid
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
       },
     }),
   },
   actionWrapper: {
-    width: '48%',
+    width: '47%',
     marginBottom: 15,
     ...Platform.select({
       web: {
-        width: '48%',        // ✅ 2 per row on web
-        minWidth: 280,
+        width: '22%',        // 4 per row on large screens
+        minWidth: 220,
         height: 170,
         cursor: 'pointer',
       },

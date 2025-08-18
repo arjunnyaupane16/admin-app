@@ -1,24 +1,24 @@
 // components/OrderCard.new.js
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { format } from 'date-fns';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
   Dimensions,
   Easing,
+  findNodeHandle,
   Linking,
   PanResponder,
+  Platform,
   Text,
   TouchableOpacity,
-  View,
-  Vibration,
-  findNodeHandle,
-  Platform,
+  View
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { deleteOrder, markOrderAsPaid } from '../utils/orderApi';
 // Using inline styles since the external styles file might not exist
 const styles = {
   orderCard: {
@@ -195,19 +195,18 @@ const styles = {
     marginTop: 4,
   },
 };
-import { deleteOrder, markOrderAsPaid, updateOrderStatus } from '../utils/orderApi';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const OrderCard = ({
   order,
-  onActionComplete = () => {},
+  onActionComplete = () => { },
   showNotificationDot = false,
   scrollViewRef,
   isFirstRender = false,
   notificationSettings = { sound: false, vibration: true },
   isSelected = false,
-  onLongPress = () => {},
+  onLongPress = () => { },
 }) => {
   // State
   const [expanded, setExpanded] = useState(false);
@@ -215,7 +214,7 @@ const OrderCard = ({
   const [dotPressed, setDotPressed] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeAction, setSwipeAction] = useState(null);
-  
+
   // Refs
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -226,7 +225,7 @@ const OrderCard = ({
   const panResponderRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  
+
   // Setup pulse animation
   useEffect(() => {
     const pulse = Animated.loop(
@@ -243,17 +242,17 @@ const OrderCard = ({
         }),
       ])
     );
-    
+
     if (showNotificationDot) {
       pulse.start();
     } else {
       pulse.stop();
       pulseAnim.setValue(1);
     }
-    
+
     return () => pulse.stop();
   }, [showNotificationDot, pulseAnim]);
-  
+
   // Navigation
   const navigation = useNavigation();
   const router = useRouter();
@@ -434,7 +433,8 @@ const OrderCard = ({
       'Mark this order as paid?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Mark as Paid', style: 'default', onPress: async () => {
+        {
+          text: 'Mark as Paid', style: 'default', onPress: async () => {
             try {
               setIsProcessing(true);
               console.log('Marking order as paid:', order._id);
@@ -493,6 +493,7 @@ const OrderCard = ({
             useNativeDriver: true
           }).start(() => {
             alert('Order deleted');
+            try { router.push('/deleted-orders'); } catch (_) {}
           });
         } catch (error) {
           console.error('Error deleting order:', error);
@@ -509,7 +510,8 @@ const OrderCard = ({
       'Are you sure you want to delete this order?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: async () => {
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
             try {
               setIsProcessing(true);
               console.log('Deleting order:', order._id);
@@ -534,6 +536,7 @@ const OrderCard = ({
                 useNativeDriver: true
               }).start(() => {
                 Alert.alert('Success', 'Order deleted');
+                try { router.push('/deleted-orders'); } catch (_) {}
               });
             } catch (error) {
               console.error('Error deleting order:', error);
@@ -573,10 +576,10 @@ const OrderCard = ({
   }, []);
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.orderCard,
-        { 
+        {
           opacity: fadeAnim,
           transform: [{ translateX: slideAnim }]
         }
@@ -584,8 +587,8 @@ const OrderCard = ({
       ref={cardRef}
       {...(panResponderRef.current?.panHandlers || {})}
     >
-      <TouchableOpacity 
-        activeOpacity={0.9} 
+      <TouchableOpacity
+        activeOpacity={0.9}
         onPress={toggleExpand}
         onLongPress={onLongPress}
         style={styles.orderCardContent}
@@ -601,19 +604,19 @@ const OrderCard = ({
               {order.paymentStatus === 'paid' ? ' • Paid' : ' • Unpaid'}
             </Text>
           </View>
-          
+
           <View style={styles.orderActions}>
             {showNotificationDot && (
               <TouchableOpacity onPress={handleDotPress} style={styles.notificationDot}>
-                <Animated.View 
+                <Animated.View
                   style={[
-                    styles.pulsingDot, 
+                    styles.pulsingDot,
                     { transform: [{ scale: dotPressed ? 1 : pulseAnim }] }
-                  ]} 
+                  ]}
                 />
               </TouchableOpacity>
             )}
-            
+
             <Animated.View style={{ transform: [{ rotate }] }}>
               <Icon name="keyboard-arrow-down" size={24} color="#666" />
             </Animated.View>
@@ -627,7 +630,7 @@ const OrderCard = ({
                 {order.customer?.name || 'Guest Customer'}
               </Text>
               {order.customer?.phone && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.phoneButton}
                   onPress={handleCallCustomer}
                   disabled={isProcessing}
