@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 
 // Compact recycle-bin list; no full OrderCard here
@@ -55,30 +56,48 @@ const DeletedOrdersScreen = () => {
       return;
     }
 
-    Alert.alert(
-      actionLabel,
-      `Are you sure you want to ${actionLabel.toLowerCase()} ${targetOrders.length} order${targetOrders.length > 1 ? 's' : ''
-      }?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: actionLabel,
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              for (const id of targetOrders) {
-                await actionFn(id);
+    const message = `Are you sure you want to ${actionLabel.toLowerCase()} ${targetOrders.length} order${targetOrders.length > 1 ? 's' : ''}?`;
+
+    if (Platform.OS === 'web') {
+      const ok = window.confirm(message);
+      if (!ok) return;
+      (async () => {
+        try {
+          for (const id of targetOrders) {
+            await actionFn(id);
+          }
+          alert(successMessage);
+          await loadDeletedOrders();
+          setSelectedOrders([]);
+        } catch (err) {
+          alert(err?.message || 'Action failed');
+        }
+      })();
+    } else {
+      Alert.alert(
+        actionLabel,
+        message,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: actionLabel,
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                for (const id of targetOrders) {
+                  await actionFn(id);
+                }
+                Alert.alert(successMessage);
+                await loadDeletedOrders();
+                setSelectedOrders([]);
+              } catch (err) {
+                Alert.alert('Error', err?.message || 'Action failed');
               }
-              Alert.alert(successMessage);
-              await loadDeletedOrders();
-              setSelectedOrders([]);
-            } catch (err) {
-              Alert.alert('Error', err?.message || 'Action failed');
-            }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const restoreSelected = () =>
@@ -93,27 +112,42 @@ const DeletedOrdersScreen = () => {
 
   const deleteAll = () => {
     if (!deletedOrders.length) return;
-    Alert.alert(
-      'Empty Trash',
-      `Permanently delete ALL ${deletedOrders.length} trashed orders? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete All',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await emptyTrash();
-              Alert.alert('Trash emptied.');
-              await loadDeletedOrders();
-              setSelectedOrders([]);
-            } catch (err) {
-              Alert.alert('Error', err?.message || 'Failed to empty trash');
-            }
+    const msg = `Permanently delete ALL ${deletedOrders.length} trashed orders? This cannot be undone.`;
+    if (Platform.OS === 'web') {
+      if (!window.confirm(msg)) return;
+      (async () => {
+        try {
+          await emptyTrash();
+          alert('Trash emptied.');
+          await loadDeletedOrders();
+          setSelectedOrders([]);
+        } catch (err) {
+          alert(err?.message || 'Failed to empty trash');
+        }
+      })();
+    } else {
+      Alert.alert(
+        'Empty Trash',
+        msg,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete All',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await emptyTrash();
+                Alert.alert('Trash emptied.');
+                await loadDeletedOrders();
+                setSelectedOrders([]);
+              } catch (err) {
+                Alert.alert('Error', err?.message || 'Failed to empty trash');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const isSelectedAll = selectedOrders.length && selectedOrders.length === deletedOrders.length;

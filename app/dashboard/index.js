@@ -14,7 +14,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Platform
 } from 'react-native';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import DashboardStyles from '../styles/DashboardStyles';
@@ -238,7 +239,26 @@ export default function DashboardIndexScreen() {
         .map(row => row.map(escapeCSV).join(','))
         .join('\n');
 
-      const filename = `Drift&Sip_orders_${selectedDate.toISOString().split('T')[0]}.csv`;
+      // Sanitize filename and provide web/native implementations
+      const rawName = `Drift&Sip_orders_${selectedDate.toISOString().split('T')[0]}.csv`;
+      const filename = rawName.replace(/[\\/:*?"<>|]/g, '_');
+
+      if (Platform.OS === 'web') {
+        // Web: trigger a download via Blob
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Alert.alert('Exported', 'CSV downloaded.');
+        return;
+      }
+
+      // Native: save and share
       const path = FileSystem.documentDirectory + filename;
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
 

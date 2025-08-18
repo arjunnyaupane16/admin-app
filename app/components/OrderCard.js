@@ -273,6 +273,25 @@ const OrderCard = ({
   }, [order.customer?.phone]);
 
   const handleOrderConfirm = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Mark this order as confirmed?');
+      if (!ok) return;
+      (async () => {
+        try {
+          setIsProcessing(true);
+          const response = await updateOrderStatus(order._id, 'confirmed');
+          if (response) {
+            onActionComplete({ ...order, status: 'confirmed' }, 'confirmed');
+          }
+        } catch (error) {
+          console.error('Error confirming order:', error);
+          alert(error.message || 'Failed to confirm order');
+        } finally {
+          setIsProcessing(false);
+        }
+      })();
+      return;
+    }
     Alert.alert(
       'Confirm Order',
       'Mark this order as confirmed?',
@@ -300,6 +319,25 @@ const OrderCard = ({
   }, [order, onActionComplete]);
 
   const handleMarkAsPaid = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Mark this order as paid?');
+      if (!ok) return;
+      (async () => {
+        try {
+          setIsProcessing(true);
+          const response = await markOrderAsPaid(order._id);
+          if (response) {
+            onActionComplete({ ...order, paymentStatus: 'paid' }, 'paid');
+          }
+        } catch (error) {
+          console.error('Error marking as paid:', error);
+          alert(error.message || 'Failed to mark as paid');
+        } finally {
+          setIsProcessing(false);
+        }
+      })();
+      return;
+    }
     Alert.alert(
       'Confirm Payment',
       'Mark this order as paid?',
@@ -327,6 +365,46 @@ const OrderCard = ({
   }, [order, onActionComplete]);
 
   const handleDelete = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Are you sure you want to delete this order?');
+      if (!ok) return;
+      (async () => {
+        try {
+          setIsProcessing(true);
+          console.log('Deleting order:', order._id);
+          const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
+          console.log('Delete response:', response);
+
+          if (!response) throw new Error('No response from server');
+
+          const deletedOrder = {
+            ...order,
+            status: 'deleted',
+            deletedFrom: 'orderCard',
+            ...response
+          };
+
+          onActionComplete?.(deletedOrder, 'deleted');
+
+          // Fade out animation before deletion
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true
+          }).start(() => {
+            alert('Order deleted');
+          });
+        } catch (error) {
+          console.error('Error deleting order:', error);
+          alert(error.message || 'Failed to delete order');
+          fadeAnim.setValue(1);
+        } finally {
+          setIsProcessing(false);
+          closeAllActions();
+        }
+      })();
+      return;
+    }
     Alert.alert(
       'Delete Order',
       'Are you sure you want to delete this order?',
@@ -337,7 +415,7 @@ const OrderCard = ({
             try {
               setIsProcessing(true);
               console.log('Deleting order:', order._id);
-              const response = await deleteOrder(order._id, 'orderCard');
+              const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
               console.log('Delete response:', response);
 
               if (!response) throw new Error('No response from server');

@@ -126,7 +126,7 @@ export default function HomeScreen() {
               <View style={[styles.actionCard, { backgroundColor: feature.color }]}>
                 <MaterialIcons
                   name={feature.icon}
-                  size={30}
+                  size={Platform.OS === 'web' ? 34 : 30}
                   color="#fff"
                   style={styles.actionIcon}
                 />
@@ -251,8 +251,8 @@ export default function HomeScreen() {
     ...Platform.select({
       web: {
         width: '22%',        // 4 per row on large screens
-        minWidth: 200,
-        height: 150,
+        minWidth: 220,
+        height: 170,
         cursor: 'pointer',
       },
     }),
@@ -285,7 +285,7 @@ export default function HomeScreen() {
     fontSize: 16,
     fontWeight: '600',
     ...Platform.select({
-      web: { fontSize: 18 },
+      web: { fontSize: 20 },
     }),
   },
   summaryContainer: {
