@@ -9,7 +9,7 @@ const OrdersStyles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: 'fff',
+    backgroundColor: '#fff',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 8,
@@ -24,24 +24,225 @@ const OrdersStyles = StyleSheet.create({
     borderLeftColor: '#ddd', // Default color, will be overridden by status
   },
 
-  // Status Variations
+  // New styles used by OrderCard.js (polished look)
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    marginVertical: 6,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderLeftWidth: 4,      // Thinner status indicator
+    borderWidth: 1,          // Card border
+    borderLeftColor: '#6a1b9a',
+    borderColor: '#6a1b9a',
+    minHeight: 90,          // Reduced minimum height
+  },
+  // Status-specific styles
+  orderCardPending: {
+    borderLeftColor: '#FFA726', // Dark yellow/orange for pending
+    borderColor: '#FFA726',
+  },
+  orderCardConfirmed: {
+    borderLeftColor: '#66BB6A', // Green for confirmed
+    borderColor: '#66BB6A',
+  },
+  orderCardDefault: {
+    borderLeftColor: '#6a1b9a', // Purple for default
+    borderColor: '#6a1b9a',
+  },
+  expandedCard: {
+    borderWidth: 2,
+    borderColor: '#4299e1',
+  },
+  orderCardContent: {
+    padding: 12,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  orderInfo: {
+    flex: 1,
+  },
+  highlightTable: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1a237e',
+    marginRight: 8,
+  },
+  tableNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#6a1b9a',
+    backgroundColor: '#f3e5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  orderStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginTop: 2,
+  },
+  orderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pulsingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+  },
+  phoneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6a1b9a',
+    borderRadius: 18,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  phoneText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  customerInfo: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  customerName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2c3e50',
+    flex: 1,
+  },
+  orderItems: {
+    marginTop: 8,
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+    marginBottom: 8,
+  },
+  orderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  itemName: {
+    fontSize: 16,
+    color: '#2c3e50',
+    flex: 1,
+    fontWeight: '500',
+  },
+  itemPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    minWidth: 80,
+    textAlign: 'right',
+  },
+  orderTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  totalLabel: {
+    fontSize: 16,
+    color: '#555',
+    fontWeight: '600',
+  },
+  orderTotal: {
+    fontSize: 26, // Increased from 22
+    fontWeight: '900', // Bolder
+    color: '#1b5e20', // Darker green for better contrast
+  },
+  orderFooter: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  orderDate: {
+    fontSize: 15,
+    color: '#888',
+    fontFamily: 'monospace',
+  },
+  orderTime: {
+    fontSize: 12, // Set to 12px
+    color: '#5c6bc0',
+    fontFamily: 'monospace',
+    fontWeight: '500',
+  },
+
+  // Enhanced Status Colors
   statusPending: {
     borderLeftColor: '#FFA726', // Orange
+    backgroundColor: 'transparent',
   },
   statusConfirmed: {
     borderLeftColor: '#42A5F5', // Blue
+    backgroundColor: 'transparent',
   },
   statusPaid: {
-    borderLeftColor: '#66BB6A', // Green
+    borderLeftColor: '#66BB6A',
+    backgroundColor: 'transparent',
   },
   statusCompleted: {
-    borderLeftColor: '#5C6BC0', // Indigo
+    borderLeftColor: '#5C6BC0',
+    backgroundColor: '#E8EAF6',
   },
   statusCancelled: {
-    borderLeftColor: '#EF5350', // Red
+    borderLeftColor: '#EF5350',
+    backgroundColor: '#FFEBEE',
   },
   statusDefault: {
     borderLeftColor: '#BDBDBD', // Grey
+  },
+
+  // Confirmation States
+  confirmedHighlight: {
+    shadowColor: '#42A5F5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  paidHighlight: {
+    shadowColor: '#66BB6A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
   // Special State Styles
@@ -97,17 +298,10 @@ const OrdersStyles = StyleSheet.create({
     color: '#333',
   },
   customerName: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2c3e50',
   },
-  orderTotal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginRight: 8,
-  },
-
   // Badge Styles
   urgentBadge: {
     backgroundColor: '#FF5252',
@@ -141,21 +335,50 @@ const OrdersStyles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#888',
-    marginRight: 16,
-  },
 
-  // Expanded Content Styles
-  expandedContent: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
-  },
-  detailSection: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
+// Expanded Content Styles
+expandedContent: {
+marginTop: 12,
+borderTopWidth: 1,
+borderTopColor: '#eee',
+paddingTop: 12,
+},
+orderItems: {
+marginTop: 10,
+borderTopWidth: 1,
+borderTopColor: '#f0f0f0',
+paddingTop: 10,
+},
+specialInstructionsContainer: {
+backgroundColor: '#f8f9fa',
+borderRadius: 8,
+padding: 12,
+marginVertical: 10,
+borderLeftWidth: 4,
+borderLeftColor: '#6a1b9a',
+},
+specialInstructionsLabel: {
+fontWeight: '600',
+color: '#4a4a4a',
+marginBottom: 4,
+fontSize: 14,
+},
+specialInstructionsText: {
+color: '#666',
+fontSize: 14,
+lineHeight: 20,
+},
+detailSection: {
+marginBottom: 16,
+},
+sectionTitle: {
+fontSize: 12,
+fontWeight: 'bold',
+color: '#888',
+marginBottom: 8,
+textTransform: 'uppercase',
+letterSpacing: 0.5,
+},
     fontSize: 12,
     fontWeight: 'bold',
     color: '#888',
@@ -321,27 +544,30 @@ const OrdersStyles = StyleSheet.create({
   },
 
   // Action Buttons
-  actionButtons: {
+  actionButtonsContainer: {
+    marginTop: 10,
+  },
+  actionButtonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
-    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 6,
   },
   actionButton: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    minWidth: '30%',
+    minWidth: 80,
   },
   actionButtonText: {
-    color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 6,
+    fontWeight: '600',
+  },
+  moreButton: {
+    backgroundColor: '#757575',
   },
   confirmButton: {
     backgroundColor: '#42A5F5',
@@ -355,49 +581,22 @@ const OrdersStyles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#EF5350',
   },
-  moreButton: {
-    backgroundColor: '#BDBDBD',
-  },
 
   // Footer
   orderFooter: {
-    marginTop: 12,
+    marginTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
+    borderTopColor: '#f0f0f0',
   },
-  orderDate: {
-    fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-  },
-  orderIdFull: {
-    fontSize: 10,
-    color: '#BDBDBD',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  oldOrderWarning: {
-    fontSize: 12,
-    color: '#EF5350',
-    textAlign: 'center',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-
-  // Notification Dot
-  notificationDotContainer: {
-    position: 'relative',
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
+  orderTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  notificationDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF5252',
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
 
   // Swipe Backgrounds
@@ -497,9 +696,108 @@ const OrdersStyles = StyleSheet.create({
     borderRadius: 12,
   },
 
+  // Interactive States
+  pressedState: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
+  disabledState: {
+    opacity: 0.6,
+  },
 
+  // Enhanced Buttons
+  primaryButton: {
+    backgroundColor: '#6a1b9a',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
 
+  // Consistent Spacing
+  smallSpacing: {
+    marginVertical: 4,
+  },
+  mediumSpacing: {
+    marginVertical: 8,
+  },
+  largeSpacing: {
+    marginVertical: 12,
+  },
 
+  // Typography
+  heading1: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2c3e50',
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  bodyText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#4a5568',
+  },
+
+  // Elevation Levels
+  elevation1: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  elevation2: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  elevation3: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+
+  // Status Badge
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#6a1b9a',
+  },
+  statusBadgePending: {
+    borderColor: '#FFA726', // Orange
+  },
+  statusBadgeConfirmed: {
+    borderColor: '#42A5F5', // Blue
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });
 
 export default OrdersStyles;

@@ -2,6 +2,7 @@ import axios from 'axios';
 import {
   ORDER_API
 } from './constants';
+import { getItem } from '../utils/storage';
 
 // Create axios instance with baseURL and 30s timeout
 const baseURL = ORDER_API.replace('/orders', ''); // remove /orders to get base API URL
@@ -11,10 +12,108 @@ const axiosInstance = axios.create({
   timeout: 30000, // 30 seconds timeout
 });
 
+// Generic helper to try multiple request fallbacks
+const requestWithFallbacks = async (tries) => {
+  const errors = [];
+  
+  // Validate input
+  if (!Array.isArray(tries) || tries.length === 0) {
+    throw new Error('No API endpoints provided to try');
+  }
+
+  for (const t of tries) {
+    try {
+      if (!t || typeof t !== 'object') {
+        throw new Error('Invalid request configuration');
+      }
+      
+      const { method = 'get', url, data, params = {}, headers = {} } = t;
+      
+      if (!url) {
+        throw new Error('Missing URL in request configuration');
+      }
+
+      console.log('[API try]', method.toUpperCase(), `${baseURL}${url}`, { params });
+      
+      const config = { 
+        method, 
+        url, 
+        data, 
+        params,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        }
+      };
+      
+      const res = await axiosInstance.request(config);
+      return res;
+      
+    } catch (err) {
+      const status = err?.response?.status;
+      const body = err?.response?.data || err.message;
+      const errorUrl = t?.url || 'unknown';
+      const errorMethod = t?.method?.toUpperCase?.() || 'UNKNOWN';
+      
+      console.warn('[API fallback failed]', errorMethod, errorUrl, status, body);
+      
+      // Only add to errors if we have valid error info
+      if (errorUrl !== 'unknown' || status || body) {
+        errors.push({ 
+          url: errorUrl, 
+          method: errorMethod, 
+          status, 
+          body: body instanceof Error ? body.message : body 
+        });
+      }
+      
+      // If we're out of retries, throw the accumulated errors
+      if (tries.indexOf(t) === tries.length - 1) {
+        const summary = errors.length > 0 
+          ? errors.map(e => 
+              `${e.method} ${e.url}: ${e.status || 'ERR'} ${typeof e.body === 'string' ? e.body : JSON.stringify(e.body)}`
+            ).join(' | ')
+          : 'No valid error information available';
+          
+        const error = new Error(`All fallbacks failed: ${summary}`);
+        error.attempts = errors;
+        throw error;
+      }
+    }
+  }
+};
+
+// Attach Authorization token if present and basic request id for tracing
+axiosInstance.interceptors.request.use(async (config) => {
+  try {
+    const token = await getItem('authToken');
+    // Attach only if token looks like a real JWT (e.g., has at least two dots)
+    if (token && typeof token === 'string' && token.split('.').length >= 3) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (_) {
+    // ignore
+  }
+  return config;
+});
+
+// Centralized error logging
+axiosInstance.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    const url = error?.config?.url;
+    console.warn('API error:', status, url, data || error.message);
+    return Promise.reject(error);
+  }
+);
+
 // ✅ Fetch all active (non-deleted) orders
 export const fetchOrders = async ({ excludeOrderCardDeleted = false } = {}) => {
   const res = await axiosInstance.get('/orders', {
-    params: { excludeOrderCardDeleted }
+    params: { excludeOrderCardDeleted, t: Date.now() }
   });
   return res.data;
 };
@@ -51,25 +150,91 @@ export const emptyTrash = async () => {
 
 // ✅ Soft delete an active order
 export const deleteOrder = async (id, data = { deletedFrom: 'admin' }) => {
-  const res = await axiosInstance.delete(`/orders/${id}`, { data });
+  const deletedFrom = data?.deletedFrom || 'admin';
+  const res = await requestWithFallbacks([
+    // DELETE with body
+    { method: 'delete', url: `/orders/${id}`, data },
+    // DELETE with query param
+    { method: 'delete', url: `/orders/${id}`, params: { deletedFrom } },
+    // POST explicit delete route
+    { method: 'post', url: `/orders/${id}/delete`, data: { deletedFrom } },
+    // PATCH status to deleted as last resort
+    { method: 'patch', url: `/orders/${id}`, data: { status: 'deleted', deletedFrom } },
+  ]);
   return res.data;
 };
 
 // ✅ Mark order as paid
 export const markOrderAsPaid = async (id) => {
-  const res = await axiosInstance.put(`/orders/${id}`, { paymentStatus: 'paid' });
-  return res.data;
+  if (!id) {
+    throw new Error('Order ID is required');
+  }
+  
+  try {
+    const nowIso = new Date().toISOString();
+    const payload = { 
+      paymentStatus: 'paid', 
+      status: 'confirmed', 
+      isPaid: true, 
+      paidAt: nowIso 
+    };
+
+    console.log(`Marking order ${id} as paid`, { payload });
+    
+    const res = await requestWithFallbacks([
+      // Try dedicated payment endpoints first
+      { 
+        method: 'post', 
+        url: `/orders/${id}/mark-paid`, 
+        data: { paidAt: nowIso },
+        headers: { 'Content-Type': 'application/json' }
+      },
+      { 
+        method: 'post', 
+        url: `/orders/${id}/pay`,
+        data: { timestamp: nowIso },
+        headers: { 'Content-Type': 'application/json' }
+      },
+      // Fallback to direct update
+      { 
+        method: 'patch', 
+        url: `/orders/${id}`,
+        data: payload,
+        headers: { 'Content-Type': 'application/json' }
+      },
+      { 
+        method: 'put', 
+        url: `/orders/${id}`,
+        data: payload,
+        headers: { 'Content-Type': 'application/json' }
+      },
+    ]);
+    
+    console.log(`Successfully marked order ${id} as paid`, res.data);
+    return res.data;
+    
+  } catch (error) {
+    console.error(`Failed to mark order ${id} as paid:`, error);
+    throw error; // Re-throw to be handled by the caller
+  }
 };
 
 // ✅ Update order status
 export const updateOrderStatus = async (id, status) => {
-  const res = await axiosInstance.put(`/orders/${id}`, { status });
+  const res = await requestWithFallbacks([
+    { method: 'put', url: `/orders/${id}`, data: { status } },
+    { method: 'patch', url: `/orders/${id}`, data: { status } },
+    { method: 'post', url: `/orders/${id}/status`, data: { status } },
+  ]);
   return res.data;
 };
 
 // ✅ Update full order
 export const updateOrder = async (id, updatedData) => {
-  const res = await axiosInstance.put(`/orders/${id}`, updatedData);
+  const res = await requestWithFallbacks([
+    { method: 'put', url: `/orders/${id}`, data: updatedData },
+    { method: 'patch', url: `/orders/${id}`, data: updatedData },
+  ]);
   return res.data;
 };
 

@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  BackHandler,
   Dimensions,
   FlatList,
   Modal,
@@ -15,14 +14,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import DashboardStyles from '../styles/DashboardStyles';
 import { deleteOrder, fetchAdminOrders } from '../utils/orderApi';
-import TopNavBar from '../components/TopNavBar';
 
 const screenWidth = Dimensions.get('window').width;
+// Account for container padding (15*2) and chart card padding (15*2)
+const chartWidth = Math.max(220, screenWidth - 60);
 
 export default function DashboardIndexScreen() {
   const router = useRouter();
@@ -77,10 +77,8 @@ export default function DashboardIndexScreen() {
         }
       });
 
-      // Exclude soft-deleted from display
-      const visibleOrders = dateFilteredOrders.filter(order => {
-        return !(order.status === 'deleted' && order.deletedFrom === 'admin');
-      });
+      // Exclude all soft-deleted from display (regardless of source)
+      const visibleOrders = dateFilteredOrders.filter(order => order.status !== 'deleted');
       setOrders(visibleOrders);
 
       // Compute stats from full filtered list
@@ -207,25 +205,49 @@ export default function DashboardIndexScreen() {
 
   const exportCSV = async () => {
     try {
-      const rows = [
-        ['ID', 'Name', 'Phone', 'Type', 'Table', 'Items', 'Total', 'Status', 'Payment', 'Date'],
-        ...filteredOrders.map((o) => [
-          o._id,
-          o.customer?.name || 'N/A',
-          o.customer?.phone || 'N/A',
-          o.orderType,
-          o.tableNumber || '-',
-          o.items.map(i => `${i.name}(${i.size})x${i.quantity}`).join('; '),
-          o.totalAmount,
-          o.status,
-          o.paymentMethod,
-          new Date(o.createdAt).toLocaleString(),
-        ])
-      ];
-      const csv = rows.map(r => r.join(',')).join('\n');
-      const path = FileSystem.documentDirectory + `orders_${selectedDate.toISOString().split('T')[0]}.csv`;
+      if (!filteredOrders || filteredOrders.length === 0) {
+        Alert.alert('No Data', 'There are no orders to export for the selected filters.');
+        return;
+      }
+
+      const escapeCSV = (val) => {
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        // escape quotes by doubling them and wrap in quotes if contains comma or quote or newline
+        if (/[",\n]/.test(str)) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      };
+
+      const header = ['ID', 'Name', 'Phone', 'Type', 'Table', 'Items', 'Total', 'Status', 'Payment', 'Date'];
+      const body = filteredOrders.map((o) => [
+        o._id,
+        o.customer?.name || 'N/A',
+        o.customer?.phone || 'N/A',
+        o.orderType,
+        o.tableNumber || '-',
+        o.items.map(i => `${i.name}(${i.size})x${i.quantity}`).join('; '),
+        o.totalAmount,
+        o.status,
+        o.paymentMethod,
+        new Date(o.createdAt).toLocaleString(),
+      ]);
+
+      const csv = [header, ...body]
+        .map(row => row.map(escapeCSV).join(','))
+        .join('\n');
+
+      const filename = `Drift&Sip_orders_${selectedDate.toISOString().split('T')[0]}.csv`;
+      const path = FileSystem.documentDirectory + filename;
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
-      await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Export Orders' });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(path, { mimeType: 'text/csv', dialogTitle: 'Export Orders' });
+      } else {
+        Alert.alert('Exported', `CSV saved to: ${path}`);
+      }
     } catch (err) {
       console.error('Export failed:', err);
       Alert.alert('Error', 'Failed to export CSV');
@@ -260,14 +282,16 @@ export default function DashboardIndexScreen() {
       onPress={() => handleOrderPress(item)}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.name}>👤 {item.customer?.name || 'No Name'}</Text>
+        <Text style={styles.name}>{item.customer?.name || 'No Name'}</Text>
         <Text style={styles.orderId}>#{item._id.slice(-6)}</Text>
       </View>
-      <Text>📞 {item.customer?.phone || 'No Phone'}</Text>
-      <Text>🍽️ {item.orderType} {item.tableNumber ? `(Table ${item.tableNumber})` : ''}</Text>
-      <Text>💳 {item.paymentMethod}</Text>
-      <Text>🛒 {item.items.reduce((sum, item) => sum + item.quantity, 0)} items</Text>
-      <Text style={styles.totalAmount}>💰 Rs. {item.totalAmount}</Text>
+      <Text>{item.customer?.phone || 'No Phone'}</Text>
+      <Text>
+        {item.orderType} {item.tableNumber ? `(Table ${item.tableNumber})` : ''}
+      </Text>
+      <Text>{item.paymentMethod}</Text>
+      <Text>{item.items.reduce((sum, i) => sum + i.quantity, 0)} items</Text>
+      <Text style={styles.totalAmount}>Rs. {item.totalAmount}</Text>
       <View style={[
         styles.statusBadge,
         item.status === 'confirmed' && styles.statusConfirmed,
@@ -421,9 +445,9 @@ export default function DashboardIndexScreen() {
           {/* Stats Section */}
           <View style={styles.statsContainer}>
             <StatButton label="Total" count={stats.total} filterKey="all" />
-            <StatButton label="Confirmed" count={stats.confirmed} filterKey="confirmed"  />
+            <StatButton label="Confirmed" count={stats.confirmed} filterKey="confirmed" />
             <StatButton label="Pending" count={stats.pending} filterKey="pending" />
-            <StatButton label="Deleted" count={stats.deleted} filterKey="deleted"  />
+            <StatButton label="Deleted" count={stats.deleted} filterKey="deleted" />
           </View>
 
           {/* Charts Section */}
@@ -434,12 +458,12 @@ export default function DashboardIndexScreen() {
               <Text style={styles.chartTitle}>Orders by Hour ({dateFilterType})</Text>
               <BarChart
                 data={{
-                  labels: Array.from({ length: 24 }, (_, i) => i),
+                  labels: Array.from({ length: 24 }, (_, i) => String(i)),
                   datasets: [{
                     data: stats.hourlyData || Array(24).fill(0)
                   }]
                 }}
-                width={screenWidth - 40}
+                width={chartWidth}
                 height={220}
                 yAxisLabel=""
                 chartConfig={{
@@ -447,16 +471,13 @@ export default function DashboardIndexScreen() {
                   backgroundGradientFrom: '#ffffff',
                   backgroundGradientTo: '#ffffff',
                   decimalPlaces: 0,
+                  barPercentage: 0.7,
                   color: (opacity = 1) => `rgba(71, 123, 68, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16
+                  labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+                  propsForBackgroundLines: {
+                    stroke: '#e5e7eb',
+                    strokeDasharray: '0',
                   },
-                  propsForDots: {
-                    r: '4',
-                    strokeWidth: '2',
-                    stroke: '#477b44'
-                  }
                 }}
                 style={{
                   marginVertical: 8,
@@ -469,24 +490,28 @@ export default function DashboardIndexScreen() {
             <View style={styles.chartRow}>
               <View style={[styles.chartCard, { flex: 1 }]}>
                 <Text style={styles.chartTitle}>Order Types</Text>
-                <PieChart
-                  data={Object.entries(stats.orderTypes || {}).map(([name, count], index) => ({
-                    name,
-                    count,
-                    color: ['#477b44', '#1f5265', '#3a7ca5', '#2f6690', '#16425b'][index % 5],
-                    legendFontColor: '#7F7F7F',
-                    legendFontSize: 12
-                  }))}
-                  width={screenWidth / 2 - 30}
-                  height={150}
-                  chartConfig={{
-                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  }}
-                  accessor="count"
-                  backgroundColor="transparent"
-                  paddingLeft="15"
-                  absolute
-                />
+                {Object.keys(stats.orderTypes || {}).length ? (
+                  <PieChart
+                    data={Object.entries(stats.orderTypes || {}).map(([name, count], index) => ({
+                      name,
+                      count,
+                      color: ['#477b44', '#1f5265', '#3a7ca5', '#2f6690', '#16425b'][index % 5],
+                      legendFontColor: '#6b7280',
+                      legendFontSize: 12
+                    }))}
+                    width={Math.max(180, chartWidth / 2 - 15)}
+                    height={160}
+                    chartConfig={{
+                      color: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+                    }}
+                    accessor="count"
+                    backgroundColor="transparent"
+                    paddingLeft="8"
+                    absolute
+                  />
+                ) : (
+                  <Text style={{ color: '#6b7280' }}>No order type data</Text>
+                )}
               </View>
 
               <View style={[styles.chartCard, { flex: 1 }]}>

@@ -1,7 +1,7 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import 'react-native-gesture-handler';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   FlatList,
   StyleSheet,
@@ -11,29 +11,98 @@ import {
 } from 'react-native';
 
 import OrderCard from './components/OrderCard';
+import { fetchAdminOrders } from './utils/orderApi';
 
 const TotalOrdersScreen = () => {
 
 
   const router = useRouter();
-  const { orders: ordersString, dateFilterType } = useLocalSearchParams();
-  const orders = JSON.parse(ordersString || '[]');
+  const { orders: ordersString, dateFilterType, selectedDate: selectedDateISO } = useLocalSearchParams();
+  const selectedDate = selectedDateISO ? new Date(selectedDateISO) : new Date();
+  const initialOrders = JSON.parse(ordersString || '[]');
+  const [list, setList] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const filteredOrders = orders.filter((order) => {
-    if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
-    if (order.status === 'deleted' && order.deletedFrom === 'orderCard' && activeFilter !== 'deleted') return false;
+  // Helpers for date comparison
+  const isSameDay = (date1, date2) => (
+    date1.getDate() === date2.getDate() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getFullYear() === date2.getFullYear()
+  );
 
-    if (activeFilter === 'all') return true;
-    return order.status === activeFilter;
-  });
+  const isSameWeek = (date1, date2) => {
+    const oneDay = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round(Math.abs((date1 - date2) / oneDay));
+    return diffDays < 7 && date1.getDay() <= date2.getDay();
+  };
+
+  const isSameMonth = (date1, date2) => (
+    date1.getMonth() === date2.getMonth() &&
+    date1.getFullYear() === date2.getFullYear()
+  );
+
+  const isSameYear = (date1, date2) => (
+    date1.getFullYear() === date2.getFullYear()
+  );
+
+  // Refetch fresh data every time this screen gets focus
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const load = async () => {
+        try {
+          const allOrders = await fetchAdminOrders();
+          // Apply same date filter as dashboard
+          const dateFiltered = allOrders.filter((order) => {
+            const createdAt = new Date(order.createdAt);
+            switch (dateFilterType) {
+              case 'weekly':
+                return isSameWeek(createdAt, selectedDate);
+              case 'monthly':
+                return isSameMonth(createdAt, selectedDate);
+              case 'yearly':
+                return isSameYear(createdAt, selectedDate);
+              case 'daily':
+              default:
+                return isSameDay(createdAt, selectedDate);
+            }
+          });
+          // Exclude deleted
+          const visible = dateFiltered.filter((o) => o.status !== 'deleted');
+          if (active) setList(visible);
+        } catch (e) {
+          // swallow for now; UI will still show param-passed snapshot
+          console.warn('Failed to refresh total-orders:', e?.message);
+        }
+      };
+      load();
+      return () => { active = false; };
+    }, [dateFilterType, selectedDateISO])
+  );
+
+  const handleActionComplete = useCallback((updatedOrder, actionType) => {
+    setList((prev) => {
+      if (!updatedOrder?._id) return prev;
+      if (actionType === 'deleted' || updatedOrder.status === 'deleted') {
+        return prev.filter((o) => o._id !== updatedOrder._id);
+      }
+      // Merge update for paid or edited
+      return prev.map((o) => (o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o));
+    });
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    return list.filter((order) => {
+      if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
+      if (order.status === 'deleted' && order.deletedFrom === 'orderCard' && activeFilter !== 'deleted') return false;
+
+      if (activeFilter === 'all') return true;
+      return order.status === activeFilter;
+    });
+  }, [list, activeFilter]);
 
   return (
     <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
-      </TouchableOpacity>
 
       <Text style={styles.title}>Total Orders ({dateFilterType || 'All'})</Text>
 
@@ -56,7 +125,9 @@ const TotalOrdersScreen = () => {
       <FlatList
         data={filteredOrders}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => <OrderCard order={item} />}
+        renderItem={({ item }) => (
+          <OrderCard order={item} onActionComplete={handleActionComplete} />
+        )}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No orders found</Text>

@@ -1,5 +1,6 @@
-import { Slot, useRouter, useSegments } from 'expo-router';
+import * as React from 'react';
 import { useContext, useEffect } from 'react';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, AppState, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -56,18 +57,6 @@ function AuthLayout() {
   );
 }
 
-export default function RootLayout() {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SwipeBackWrapper>
-        <AuthProvider>
-          <AuthLayout />
-        </AuthProvider>
-      </SwipeBackWrapper>
-    </GestureHandlerRootView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -79,3 +68,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 });
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      <SwipeBackWrapper>
+        <AuthProvider>
+          <AuthLayout />
+        </AuthProvider>
+      </SwipeBackWrapper>
+    </GestureHandlerRootView>
+  );
+}

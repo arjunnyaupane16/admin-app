@@ -1,5 +1,6 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   BackHandler,
@@ -22,7 +23,25 @@ export default function OrdersScreen() {
 
   const flatListRef = useRef(null);
   const prevOrdersRef = useRef([]);
+  const lastActionAtRef = useRef(0);
+  const optimisticPaidIdsRef = useRef(new Set());
   const router = useRouter();
+
+  // Load paid order IDs from storage on mount
+  useEffect(() => {
+    const loadPaidOrders = async () => {
+      try {
+        const paidOrders = await AsyncStorage.getItem('paidOrders');
+        if (paidOrders) {
+          const paidIds = JSON.parse(paidOrders);
+          optimisticPaidIdsRef.current = new Set(paidIds);
+        }
+      } catch (error) {
+        console.error('Error loading paid orders:', error);
+      }
+    };
+    loadPaidOrders();
+  }, []);
 
   // ✅ Handle hardware back button
   useEffect(() => {
@@ -43,17 +62,22 @@ export default function OrdersScreen() {
     try {
       const data = await fetchOrders({ excludeOrderCardDeleted: true });
 
-      // Detect new order IDs if needed
-      const prevIds = prevOrdersRef.current.map((o) => o._id);
-      const newIds = data.map((o) => o._id);
-      const isNew = newIds.some((id) => !prevIds.includes(id));
+      // Merge with optimistic paid state and ensure paid status is preserved
+      const merged = data.map((order) => {
+        // If order is marked as paid in our local state, ensure it stays that way
+        if (optimisticPaidIdsRef.current.has(order._id)) {
+          return { 
+            ...order, 
+            paymentStatus: 'paid',
+            isPaid: true,
+            status: order.status === 'pending' ? 'confirmed' : order.status
+          };
+        }
+        return order;
+      });
 
-      if (isNew) {
-        console.log('🆕 New order detected');
-      }
-
-      prevOrdersRef.current = data;
-      setOrders([...data]);
+      prevOrdersRef.current = merged;
+      setOrders(merged);
     } catch (err) {
       console.error('❌ Error loading orders:', err.message);
     }
@@ -64,8 +88,18 @@ export default function OrdersScreen() {
     loadOrders().finally(() => setLoading(false));
   }, []);
 
+  // Reload fresh data whenever this screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+    }, [])
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
+      // Skip refresh briefly after a user action to avoid visual reversion
+      const now = Date.now();
+      if (now - lastActionAtRef.current < 6000) return; // allow backend some time to persist
       loadOrders();
     }, 3000);
     return () => clearInterval(interval);
@@ -75,6 +109,39 @@ export default function OrdersScreen() {
     setRefreshing(true);
     await loadOrders();
     setRefreshing(false);
+  };
+
+  // Save paid order IDs to storage
+  const savePaidOrders = async (orderId) => {
+    try {
+      const paidOrders = Array.from(optimisticPaidIdsRef.current);
+      await AsyncStorage.setItem('paidOrders', JSON.stringify(paidOrders));
+    } catch (error) {
+      console.error('Error saving paid orders:', error);
+    }
+  };
+
+  // Optimistic update when child cards complete an action
+  const handleActionComplete = async (updatedOrder, actionType) => {
+    lastActionAtRef.current = Date.now();
+    
+    if (actionType === 'paid' || updatedOrder.paymentStatus === 'paid') {
+      optimisticPaidIdsRef.current.add(updatedOrder._id);
+      await savePaidOrders(updatedOrder._id);
+    }
+    
+    // Update local state
+    setOrders(prev => {
+      const updated = prev.map(o => 
+        o._id === updatedOrder._id 
+          ? { ...o, ...updatedOrder, paymentStatus: 'paid', isPaid: true }
+          : o
+      );
+      return updated;
+    });
+    
+    // Background refresh to reconcile with server
+    loadOrders();
   };
 
   const handleLiveOrdersPress = async () => {
@@ -94,7 +161,8 @@ export default function OrdersScreen() {
   const pendingCount = orders.filter((o) => o.status === 'pending').length;
 
   const filteredOrders = orders.filter((order) => {
-    if (order.status === 'deleted' && order.deletedFrom === 'admin') return false;
+    // Exclude any soft-deleted order from active list
+    if (order.status === 'deleted') return false;
     if (filter !== 'all' && order.status !== filter) return false;
     return true;
   });
@@ -182,7 +250,7 @@ export default function OrdersScreen() {
           renderItem={({ item }) => (
             <OrderCard
               order={item}
-              onActionComplete={loadOrders}
+              onActionComplete={handleActionComplete}
               scrollViewRef={flatListRef}
             />
           )}

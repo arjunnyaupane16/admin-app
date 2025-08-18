@@ -2,9 +2,9 @@ import { router } from 'expo-router';
 import { createContext, useEffect, useState } from 'react';
 import { deleteItem, getItem, setItem } from '../utils/storage';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -60,10 +60,13 @@ export const AuthProvider = ({ children }) => {
         await setItem('authToken', 'dummy-auth-token');
         await setItem('userData', JSON.stringify(userData));
 
+        // Update state first
         setIsAuthenticated(true);
         setUser(userData);
 
         console.log('Login successful:', userData);
+        
+        // Let the AuthLayout handle the navigation
         return true;
       }
 
@@ -106,4 +109,11 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+export { AuthContext, AuthProvider };
+
+export default {
+  AuthContext,
+  AuthProvider
 };

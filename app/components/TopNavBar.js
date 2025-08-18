@@ -1,6 +1,6 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import {
   BackHandler,
   Image,
@@ -19,35 +19,13 @@ export default function TopNavBar() {
 
   const isActive = (route) => pathname === route || pathname.startsWith(route + '/');
 
-  const handleBack = () => {
-    if (pathname === '/index' || pathname === '/') {
-      if (Platform.OS === 'android') {
-        BackHandler.exitApp();
-      }
-      return true;
-    }
-    router.push('/index');
-    return true;
-  };
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBack);
-      return () => backHandler.remove();
-    }
-  }, [pathname]);
 
   if (pathname === '/login' || !pathname) return null;
 
   return (
     <View style={styles.container}>
-      {/* Left Section: Back & Logo */}
+      {/* Left Section: Logo */}
       <View style={styles.leftSection}>
-        {pathname !== '/index' && (
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
         <Image
           source={require('../../assets/images/logo.png')}
           style={styles.logo}
@@ -63,14 +41,14 @@ export default function TopNavBar() {
       {/* Right Section: Nav Buttons */}
       <View style={styles.rightSection}>
         <TouchableOpacity
-          onPress={() => router.push('/dashboard')}
-          style={[styles.navItem, isActive('/dashboard') && styles.activeNavItem]}>
-          <MaterialIcons
-            name="dashboard"
+          onPress={() => router.push('/')}
+          style={[styles.navItem, isActive('/') && styles.activeNavItem]}>
+          <Ionicons
+            name="home"
             size={22}
-            color={isActive('/dashboard') ? '#fff' : 'rgba(255,255,255,0.7)'}
+            color={isActive('/') ? '#fff' : 'rgba(255,255,255,0.7)'}
           />
-          <Text style={styles.navText}>Dashboard</Text>
+          <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -82,6 +60,17 @@ export default function TopNavBar() {
             color={isActive('/orders') ? '#fff' : 'rgba(255,255,255,0.7)'}
           />
           <Text style={styles.navText}>Orders</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push('/dashboard')}
+          style={[styles.navItem, isActive('/dashboard') && styles.activeNavItem]}>
+          <MaterialIcons
+            name="dashboard"
+            size={22}
+            color={isActive('/dashboard') ? '#fff' : 'rgba(255,255,255,0.7)'}
+          />
+          <Text style={styles.navText}>Dashboard</Text>
         </TouchableOpacity>
 
         {/* ✅ Logout button shown only when authenticated and not loading */}

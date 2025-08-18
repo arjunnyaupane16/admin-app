@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import OrderCard from './components/OrderCard';
+// Compact recycle-bin list; no full OrderCard here
 
 import {
   emptyTrash,
@@ -116,14 +116,34 @@ const DeletedOrdersScreen = () => {
     );
   };
 
-  const renderItem = ({ item }) => (
-    <OrderCard
-      order={item}
-      isSelected={selectedOrders.includes(item._id)}
-      onActionComplete={loadDeletedOrders}
-      onLongPress={() => toggleSelect(item._id)}
-    />
-  );
+  const isSelectedAll = selectedOrders.length && selectedOrders.length === deletedOrders.length;
+
+  const toggleSelectAll = () => {
+    if (isSelectedAll) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(deletedOrders.map(o => o._id));
+    }
+  };
+
+  const renderItem = ({ item }) => {
+    const selected = selectedOrders.includes(item._id);
+    return (
+      <TouchableOpacity
+        onPress={() => toggleSelect(item._id)}
+        style={[styles.row, selected && styles.rowSelected]}
+      >
+        <View style={styles.rowLeft}>
+          <View style={[styles.checkbox, selected && styles.checkboxChecked]} />
+          <View style={styles.rowTextWrap}>
+            <Text style={styles.rowTitle}>{item.customer?.name || 'No Name'}</Text>
+            <Text style={styles.rowSub}>#{item._id.slice(-6)} • {new Date(item.createdAt).toLocaleString()}</Text>
+          </View>
+        </View>
+        <Text style={styles.rowAmount}>Rs. {item.totalAmount}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -138,16 +158,22 @@ const DeletedOrdersScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Deleted Orders</Text>
-        <Text style={styles.subtitle}>
-          Selected: {selectedOrders.length} / {deletedOrders.length}
-        </Text>
+        <View>
+          <Text style={styles.title}>Deleted Orders</Text>
+          <Text style={styles.subtitle}>Selected: {selectedOrders.length} / {deletedOrders.length}</Text>
+        </View>
+        {deletedOrders.length > 0 && (
+          <TouchableOpacity onPress={toggleSelectAll} style={styles.selectAllBtn}>
+            <Text style={styles.selectAllText}>{isSelectedAll ? 'Unselect All' : 'Select All'}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList
         data={deletedOrders}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={{ paddingBottom: anyDeleted ? 80 : 0 }}
         ListEmptyComponent={<Text style={styles.empty}>No deleted orders found.</Text>}
       />
@@ -185,7 +211,7 @@ export default DeletedOrdersScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
     paddingHorizontal: 12,
     paddingTop: 16,
   },
@@ -195,29 +221,107 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
   },
   subtitle: {
-    fontSize: 14,
-    color: 'gray',
+    fontSize: 12,
+    color: '#64748b',
     alignSelf: 'center',
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffffee',
     borderTopWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e5e7eb',
     position: 'absolute',
     bottom: 0,
     width: '100%',
   },
-  button: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  rowSelected: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#94a3b8',
+    marginRight: 10,
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#2563eb',
+  },
+  rowTextWrap: {
+    flex: 1,
+  },
+  rowTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  rowSub: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  rowAmount: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginLeft: 8,
+  },
+  separator: {
+    height: 8,
+  },
+  selectAllBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#334155',
+    alignSelf: 'center',
+  },
+  selectAllText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  button: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
+    minWidth: 130,
+    alignItems: 'center',
   },
   restore: {
     backgroundColor: '#4caf50',
@@ -227,7 +331,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '800',
+    fontSize: 13,
   },
   empty: {
     textAlign: 'center',

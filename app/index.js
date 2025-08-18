@@ -1,55 +1,69 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
-import {
-  BackHandler,
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import 'react-native-gesture-handler';
 import { TapGestureHandler } from 'react-native-gesture-handler';
 
+import { useEffect, useState } from 'react';
+import { fetchOrders } from './utils/orderApi';
+
 export default function HomeScreen() {
   const router = useRouter();
+  const [summary, setSummary] = useState({
+    orderCount: 0,
+    totalSales: 0,
+    averageRating: 0,
+    loading: true
+  });
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        if (Platform.OS === 'android') {
-          if (!router.canGoBack()) {
-            BackHandler.exitApp();
-            return true;
-          } else {
-            router.back();
-            return true;
-          }
-        }
-        return false;
-      };
+  useEffect(() => {
+    const fetchSummaryData = async () => {
+      try {
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
 
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [router])
-  );
+        // Fetch today's orders
+        const response = await fetchOrders({
+          startDate: startOfDay.toISOString(),
+          endDate: new Date().toISOString()
+        });
+
+        // Calculate summary
+        const todayOrders = Array.isArray(response) ? response : [];
+        const totalSales = todayOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        // Set fixed rating to 4.4
+        const avgRating = 4.4;
+
+        setSummary({
+          orderCount: todayOrders.length,
+          totalSales,
+          averageRating: avgRating,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching summary data:', error);
+        setSummary(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchSummaryData();
+  }, []);
 
   const features = [
-    {
-      title: 'Dashboard',
-      description: 'View sales analytics and business metrics',
-      icon: 'dashboard',
-      route: '/dashboard',
-      color: '#6a1b9a',
-    },
+
     {
       title: 'Orders',
       description: 'Manage current and past customer orders',
       icon: 'list-alt',
       route: '/orders',
       color: '#4a148c',
+    },
+    {
+      title: 'Dashboard',
+      description: 'View sales analytics and business metrics',
+      icon: 'dashboard',
+      route: '/dashboard',
+      color: '#6a1b9a',
     },
     {
       title: 'Menu',
@@ -80,7 +94,7 @@ export default function HomeScreen() {
           />
           <View style={styles.welcomeOverlay}>
             <Text style={styles.welcomeTitle}>Welcome Back</Text>
-            <Text style={styles.welcomeSubtitle}>Manage your café efficiently</Text>
+            <Text style={styles.welcomeSubtitle}>Manage our cafe efficiently</Text>
           </View>
         </View>
 
@@ -106,19 +120,31 @@ export default function HomeScreen() {
         </View>
 
         {/* Recent Activity */}
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.activityCard}>
-          <View style={styles.activityItem}>
-            <MaterialIcons name="local-cafe" size={24} color="#6a1b9a" />
-            <Text style={styles.activityText}>5 new orders today</Text>
+        <Text style={styles.sectionTitle}>Today's Summary</Text>
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <MaterialIcons name="receipt" size={24} color="#4a148c" />
+            <Text style={styles.summaryTitle}>Today's Orders</Text>
+            <Text style={styles.summaryValue}>
+              {summary.loading ? '...' : summary.orderCount}
+            </Text>
           </View>
-          <View style={styles.activityItem}>
-            <MaterialIcons name="attach-money" size={24} color="#6a1b9a" />
-            <Text style={styles.activityText}>Rs. 42,800 in sales</Text>
+          <View style={styles.summaryCard}>
+            <MaterialIcons name="attach-money" size={24} color="#4a148c" />
+            <Text style={styles.summaryTitle}>Total Sales</Text>
+            <Text style={styles.summaryValue}>
+              {summary.loading ? '...' : `Rs. ${summary.totalSales.toLocaleString()}`}
+            </Text>
           </View>
-          <View style={styles.activityItem}>
-            <MaterialIcons name="star" size={24} color="#6a1b9a" />
-            <Text style={styles.activityText}>4.8 average rating</Text>
+          <View style={styles.summaryCard}>
+            <MaterialIcons name="star" size={24} color="#4a148c" />
+            <Text style={styles.summaryTitle}>Rating</Text>
+            <View style={styles.ratingContainer}>
+              <MaterialIcons name="star" size={16} color="#FFD700" />
+              <Text style={styles.summaryValue}>
+                {summary.loading ? '...' : summary.averageRating}
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -197,28 +223,45 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
-    paddingHorizontal: 5,
   },
-  activityCard: {
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  summaryCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    marginHorizontal: 15,
-    padding: 20,
-    elevation: 2,
+    padding: 15,
+    marginBottom: 10,
+    width: '31%',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  activityItem: {
+  summaryTitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#4a148c',
+    marginTop: 5,
+    minHeight: 24, // Prevent layout shift when loading
+  },
+  ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginTop: 5,
   },
-  activityText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#555',
-  },
+  textAlign: 'center',
+  paddingHorizontal: 5,
 });
