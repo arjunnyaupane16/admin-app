@@ -80,7 +80,7 @@ export default function TopNavBar() {
           {/* ✅ Logout button shown only when authenticated and not loading */}
           {!isLoading && isAuthenticated && (
             <TouchableOpacity onPress={logout} style={styles.navItem}>
-              <Ionicons name="log-out" size={22} color="#666" />
+              <Ionicons name="log-out" size={22} color="rgba(255,255,255,0.7)" />
               <Text style={styles.navText}>Logout</Text>
             </TouchableOpacity>
           )}
@@ -88,76 +88,97 @@ export default function TopNavBar() {
       </Container>
     </View>
   );
-}
-const styles = StyleSheet.create({
+}const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#6a1b9a',
     ...Platform.select({
       web: {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        width: '100%',
       },
     }),
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'web' ? 20 : 12,
-    paddingBottom: Platform.OS === 'web' ? 20 : 12,
+    justifyContent: 'space-between',
+    backgroundColor: '#6a1b9a',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 12 : Platform.OS === 'web' ? 12 : 50,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.15)',
     ...Platform.select({
       web: {
-        maxWidth: 1200,
+        maxWidth: 1280,         // ✅ keep nav centered
         marginHorizontal: 'auto',
-        width: '100%',
       },
     }),
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 120, // ✅ fixed space for logo
+    minWidth: 120,             // ✅ logo space reserved
   },
   titleContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        marginLeft: -120,      // ✅ balance center despite left logo width
+      },
+    }),
   },
   title: {
-    color: '#000',
+    color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    marginLeft: 20,
+    textAlign: 'center',
+    ...Platform.select({
+      web: {
+        fontSize: 22,          // ✅ slightly bigger for web
+      },
+    }),
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexShrink: 0,
+    gap: 20,                   // ✅ spacing between nav items (web)
   },
   logo: {
-    width: 35,
-    height: 35,
-    borderRadius: 5,
+    width: 38,
+    height: 38,
+    borderRadius: 6,
   },
   navItem: {
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginHorizontal: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        transition: 'all 0.2s ease-in-out',
+      },
+    }),
   },
   activeNavItem: {
     borderBottomWidth: 2,
-    borderBottomColor: '#6a1b9a',
-    paddingBottom: 8,
+    borderBottomColor: '#fff',
+    paddingBottom: 2,
   },
   navText: {
-    color: '#666',
-    fontSize: 12,
-    marginTop: 4,
+    color: '#fff',
+    fontSize: 11,
+    marginTop: 2,
+    ...Platform.select({
+      web: {
+        fontSize: 13,
+        fontWeight: '500',
+      },
+    }),
   },
 });
+
