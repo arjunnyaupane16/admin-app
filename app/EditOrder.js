@@ -112,16 +112,13 @@ const EditOrder = () => {
         throw new Error('Customer name is required');
       }
       
-      if (!order.customer?.phone?.trim()) {
-        throw new Error('Customer phone number is required');
-      }
-      
       // Prepare the order data for submission
       const orderToUpdate = {
         ...order,
         customer: {
           name: order.customer.name.trim(),
-          phone: order.customer.phone.trim()
+          // Phone is optional; send trimmed value if present
+          ...(order.customer?.phone?.trim() ? { phone: order.customer.phone.trim() } : {})
         },
         specialInstructions: order.specialInstructions?.trim() || undefined,
         paymentMethod: order.paymentMethod?.trim() || undefined,
@@ -338,7 +335,7 @@ const EditOrder = () => {
         />
 
         {/* Customer Phone */}
-        <Text style={styles.label}>Phone *</Text>
+        <Text style={styles.label}>Phone</Text>
         <TextInput
           value={order.customer?.phone || ''}
           onChangeText={(text) => handleCustomerChange('phone', text.replace(/[^0-9+\-() ]/g, ''))}
@@ -541,15 +538,15 @@ const EditOrder = () => {
           style={[
             styles.button, 
             styles.saveButton,
-            isSaving && styles.saveButtonDisabled
+            (isSaving || !order.customer?.name?.trim()) && styles.saveButtonDisabled
           ]}
           onPress={handleSave}
-          disabled={isSaving || !order.customer?.name?.trim() || !order.customer?.phone?.trim()}
+          disabled={isSaving || !order.customer?.name?.trim()}
         >
           {isSaving ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color="#333" size="small" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={[styles.saveButtonText, (isSaving || !order.customer?.name?.trim()) && styles.saveButtonTextDisabled]}>Save Changes</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -629,14 +626,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
   },
+  // Base button style for consistent sizing
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Save button with white background and dark text
+  saveButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
   saveButtonDisabled: {
-    backgroundColor: '#A0C8FF',
-    opacity: 0.7,
+    backgroundColor: '#fff',
+    borderColor: '#e0e0e0',
+    opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: '#222',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  saveButtonTextDisabled: {
+    color: '#888',
   },
   cancelButton: {
     backgroundColor: '#f0f0f0',
