@@ -2,13 +2,13 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { useContext } from 'react';
 import {
-  BackHandler,
   Image,
   Platform,
+  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 
@@ -22,102 +22,122 @@ export default function TopNavBar() {
 
   if (pathname === '/login' || !pathname) return null;
 
+  // Use SafeAreaView for iOS and web
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+
   return (
-    <View style={styles.container}>
-      {/* Left Section: Logo */}
-      <View style={styles.leftSection}>
-        <Image
-          source={require('../../assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
-      {/* Center Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Drift and Sip</Text>
-      </View>
-
-      {/* Right Section: Nav Buttons */}
-      <View style={styles.rightSection}>
-        <TouchableOpacity
-          onPress={() => router.push('/')}
-          style={[styles.navItem, isActive('/') && styles.activeNavItem]}>
-          <Ionicons
-            name="home"
-            size={22}
-            color={isActive('/') ? '#fff' : 'rgba(255,255,255,0.7)'}
+    <View style={styles.wrapper}>
+      <Container style={styles.container}>
+        {/* Left Section: Logo */}
+        <View style={styles.leftSection}>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
           />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/orders')}
-          style={[styles.navItem, isActive('/orders') && styles.activeNavItem]}>
-          <Ionicons
-            name="list"
-            size={22}
-            color={isActive('/orders') ? '#fff' : 'rgba(255,255,255,0.7)'}
-          />
-          <Text style={styles.navText}>Orders</Text>
-        </TouchableOpacity>
+        {/* Center Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Drift and Sip</Text>
+        </View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/dashboard')}
-          style={[styles.navItem, isActive('/dashboard') && styles.activeNavItem]}>
-          <MaterialIcons
-            name="dashboard"
-            size={22}
-            color={isActive('/dashboard') ? '#fff' : 'rgba(255,255,255,0.7)'}
-          />
-          <Text style={styles.navText}>Dashboard</Text>
-        </TouchableOpacity>
-
-        {/* ✅ Logout button shown only when authenticated and not loading */}
-        {!isLoading && isAuthenticated && (
-          <TouchableOpacity onPress={logout} style={styles.navItem}>
-            <Ionicons name="log-out" size={22} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.navText}>Logout</Text>
+        {/* Right Section: Nav Buttons */}
+        <View style={styles.rightSection}>
+          <TouchableOpacity
+            onPress={() => router.push('/')}
+            style={[styles.navItem, isActive('/') && styles.activeNavItem]}>
+            <Ionicons
+              name="home"
+              size={22}
+              color={isActive('/') ? '#6a1b9a' : '#666'}
+            />
+            <Text style={styles.navText}>Home</Text>
           </TouchableOpacity>
-        )}
-      </View>
+
+          <TouchableOpacity
+            onPress={() => router.push('/orders')}
+            style={[styles.navItem, isActive('/orders') && styles.activeNavItem]}>
+            <Ionicons
+              name="list"
+              size={22}
+              color={isActive('/orders') ? '#6a1b9a' : '#666'}
+            />
+            <Text style={styles.navText}>Orders</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/dashboard')}
+            style={[styles.navItem, isActive('/dashboard') && styles.activeNavItem]}>
+            <MaterialIcons
+              name="dashboard"
+              size={22}
+              color={isActive('/dashboard') ? '#6a1b9a' : '#666'}
+            />
+            <Text style={styles.navText}>Dashboard</Text>
+          </TouchableOpacity>
+
+          {/* ✅ Logout button shown only when authenticated and not loading */}
+          {!isLoading && isAuthenticated && (
+            <TouchableOpacity onPress={logout} style={styles.navItem}>
+              <Ionicons name="log-out" size={22} color="#666" />
+              <Text style={styles.navText}>Logout</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Container>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
+  wrapper: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    ...Platform.select({
+      web: {
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+    }),
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6a1b9a',
+    backgroundColor: '#fff',
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === 'android' ? 12 : 50,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'web' ? 20 : 12,
+    paddingBottom: Platform.OS === 'web' ? 20 : 12,
+    ...Platform.select({
+      web: {
+        maxWidth: 1200,
+        marginHorizontal: 'auto',
+        width: '100%',
+      },
+    }),
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    width: 120, // ✅ fixed space for logo
   },
   titleContainer: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#000',
+    fontSize: 20,
     fontWeight: 'bold',
+    marginLeft: 20,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  backButton: {
-    marginRight: 10,
-    padding: 5,
+    flexShrink: 0,
   },
   logo: {
     width: 35,
@@ -126,17 +146,18 @@ const styles = StyleSheet.create({
   },
   navItem: {
     alignItems: 'center',
-    paddingHorizontal: 5,
-    marginLeft: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginHorizontal: 5,
   },
   activeNavItem: {
     borderBottomWidth: 2,
-    borderBottomColor: '#fff',
-    paddingBottom: 2,
+    borderBottomColor: '#6a1b9a',
+    paddingBottom: 8,
   },
   navText: {
-    color: '#fff',
-    fontSize: 10,
-    marginTop: 2,
+    color: '#666',
+    fontSize: 12,
+    marginTop: 4,
   },
 });

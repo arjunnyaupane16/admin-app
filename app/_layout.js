@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { useContext, useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { ActivityIndicator, AppState, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, StyleSheet, View, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StatusBar } from 'expo-status-bar';
 
 import TopNavBar from './components/TopNavBar';
 import { AuthContext, AuthProvider } from './context/AuthContext';
@@ -76,13 +77,16 @@ const styles = StyleSheet.create({
 });
 
 export default function RootLayout() {
+  const RootView = Platform.OS === 'web' ? View : GestureHandlerRootView;
+
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <RootView style={styles.container}>
+      <StatusBar style="light" />
       <SwipeBackWrapper>
         <AuthProvider>
           <AuthLayout />
         </AuthProvider>
       </SwipeBackWrapper>
-    </GestureHandlerRootView>
+    </RootView>
   );
 }
