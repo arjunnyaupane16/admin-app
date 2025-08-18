@@ -1,13 +1,14 @@
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams } from 'expo-router';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Platform,
 } from 'react-native';
 
 // Only load gesture-handler side effects on native
@@ -17,14 +18,24 @@ if (Platform.OS !== 'web') {
 
 import OrderCard from './components/OrderCard';
 import { fetchAdminOrders } from './utils/orderApi';
+// removed navigateToDeletedOrders import (unused and may not exist)
 
 const TotalOrdersScreen = () => {
 
 
-  const router = useRouter();
-  const { orders: ordersString, dateFilterType, selectedDate: selectedDateISO } = useLocalSearchParams();
+  // router usage removed
+  const { orders: ordersStringRaw, dateFilterType, selectedDate: selectedDateISO } = useLocalSearchParams();
   const selectedDate = selectedDateISO ? new Date(selectedDateISO) : new Date();
-  const initialOrders = JSON.parse(ordersString || '[]');
+  // Safely parse incoming orders to prevent crashes if the param is malformed
+  let initialOrders = [];
+  try {
+    const str = typeof ordersStringRaw === 'string' ? ordersStringRaw : '[]';
+    initialOrders = JSON.parse(str || '[]');
+    if (!Array.isArray(initialOrders)) initialOrders = [];
+  } catch (e) {
+    console.warn('Invalid orders param; defaulting to empty list');
+    initialOrders = [];
+  }
   const [list, setList] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -50,15 +61,24 @@ const TotalOrdersScreen = () => {
     date1.getFullYear() === date2.getFullYear()
   );
 
-  // Refetch fresh data every time this screen gets focus
+  // Track if we've made any local changes that we want to preserve
+  const localChangesRef = useRef(new Set());
+
+  // Refetch fresh data every time this screen gets focus, but respect local changes
   useFocusEffect(
     useCallback(() => {
       let active = true;
       const load = async () => {
         try {
           const allOrders = await fetchAdminOrders();
+
           // Apply same date filter as dashboard
           const dateFiltered = allOrders.filter((order) => {
+            // Skip orders that we've deleted locally
+            if (localChangesRef.current.has(order._id) && order.status === 'deleted') {
+              return false;
+            }
+
             const createdAt = new Date(order.createdAt);
             switch (dateFilterType) {
               case 'weekly':
@@ -72,27 +92,90 @@ const TotalOrdersScreen = () => {
                 return isSameDay(createdAt, selectedDate);
             }
           });
-          // Exclude deleted
-          const visible = dateFiltered.filter((o) => o.status !== 'deleted');
-          if (active) setList(visible);
+
+          if (active) {
+            setList(prevList => {
+              // If we have no local changes, just use the server data
+              if (localChangesRef.current.size === 0) {
+                return dateFiltered;
+              }
+
+              // Otherwise, merge server data with local changes
+              const serverOrdersMap = new Map(dateFiltered.map(order => [order._id, order]));
+              const mergedList = [];
+
+              // First add all server orders that aren't locally deleted
+              for (const order of dateFiltered) {
+                if (!localChangesRef.current.has(order._id)) {
+                  mergedList.push(order);
+                }
+              }
+
+              // Then add any local orders that aren't in the server response
+              for (const order of prevList) {
+                if (!serverOrdersMap.has(order._id)) {
+                  mergedList.push(order);
+                } else if (localChangesRef.current.has(order._id)) {
+                  // If we have a local version of this order, use it instead of the server version
+                  const index = mergedList.findIndex(o => o._id === order._id);
+                  if (index !== -1) {
+                    mergedList[index] = order;
+                  } else {
+                    mergedList.push(order);
+                  }
+                }
+              }
+
+              return mergedList;
+            });
+          }
         } catch (e) {
-          // swallow for now; UI will still show param-passed snapshot
           console.warn('Failed to refresh total-orders:', e?.message);
         }
       };
+
+      // Always refresh from server, but respect local changes
       load();
+
       return () => { active = false; };
     }, [dateFilterType, selectedDateISO])
   );
 
   const handleActionComplete = useCallback((updatedOrder, actionType) => {
+    const isDelete = actionType === 'deleted' || updatedOrder.status === 'deleted';
+
     setList((prev) => {
       if (!updatedOrder?._id) return prev;
-      if (actionType === 'deleted' || updatedOrder.status === 'deleted') {
-        return prev.filter((o) => o._id !== updatedOrder._id);
+
+      if (isDelete) {
+        // If already deleted or marked for deletion, don't process again
+        if (prev.some(o => o._id === updatedOrder._id && o.status === 'deleted')) {
+          return prev;
+        }
+
+        // Add deletion timestamp if not present
+        const orderToDelete = updatedOrder.deletedAt
+          ? updatedOrder
+          : {
+            ...updatedOrder,
+            status: 'deleted',
+            deletedAt: new Date().toISOString(),
+            deletedFrom: 'orderCard'
+          };
+
+        // Track this deletion locally
+        localChangesRef.current.add(updatedOrder._id);
+
+        // Filter out the deleted order
+        return prev.filter((o) => o._id !== orderToDelete._id);
       }
-      // Merge update for paid or edited
-      return prev.map((o) => (o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o));
+
+      // For non-delete updates, merge the changes
+      return prev.map((o) =>
+        o._id === updatedOrder._id
+          ? { ...o, ...updatedOrder }
+          : o
+      );
     });
   }, []);
 
@@ -131,7 +214,11 @@ const TotalOrdersScreen = () => {
         data={filteredOrders}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <OrderCard order={item} onActionComplete={handleActionComplete} />
+          <OrderCard
+            order={item}
+            onActionComplete={handleActionComplete}
+            navigateToDeletedOnDelete={false}
+          />
         )}
         contentContainerStyle={styles.list}
         ListEmptyComponent={

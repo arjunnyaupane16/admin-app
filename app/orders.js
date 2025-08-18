@@ -13,6 +13,8 @@ import {
 import OrderCard from './components/OrderCard';
 import styles from './styles/OrdersStyles';
 import { fetchOrders } from './utils/orderApi';
+import { navigateToDeletedOrders } from './utils/navigation';
+
 export default function OrdersScreen() {
 
   const [orders, setOrders] = useState([]);
@@ -66,8 +68,8 @@ export default function OrdersScreen() {
       const merged = data.map((order) => {
         // If order is marked as paid in our local state, ensure it stays that way
         if (optimisticPaidIdsRef.current.has(order._id)) {
-          return { 
-            ...order, 
+          return {
+            ...order,
             paymentStatus: 'paid',
             isPaid: true,
             status: order.status === 'pending' ? 'confirmed' : order.status
@@ -121,29 +123,33 @@ export default function OrdersScreen() {
     }
   };
 
-  // Optimistic update when child cards complete an action
+  // Handle order actions like delete, paid, etc.
   const handleActionComplete = async (updatedOrder, actionType) => {
     lastActionAtRef.current = Date.now();
-    
+    console.log('[orders] handleActionComplete called with actionType=', actionType, 'orderId=', updatedOrder?._id);
+
     if (actionType === 'paid' || updatedOrder.paymentStatus === 'paid') {
       optimisticPaidIdsRef.current.add(updatedOrder._id);
       await savePaidOrders(updatedOrder._id);
     }
-    
+
+    const isDelete = actionType === 'deleted' || updatedOrder.status === 'deleted';
+
     // Update local state
     setOrders(prev => {
-      if (actionType === 'deleted' || updatedOrder.status === 'deleted') {
+      if (isDelete) {
         // Optimistically remove from active list
+        console.log('[orders] Removing order from list due to delete:', updatedOrder?._id);
         return prev.filter(o => o._id !== updatedOrder._id);
       }
-      const updated = prev.map(o => 
-        o._id === updatedOrder._id 
+      const updated = prev.map(o =>
+        o._id === updatedOrder._id
           ? { ...o, ...updatedOrder, paymentStatus: 'paid', isPaid: true }
           : o
       );
       return updated;
     });
-    
+
     // Background refresh to reconcile with server
     loadOrders();
   };

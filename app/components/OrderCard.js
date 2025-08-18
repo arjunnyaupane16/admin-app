@@ -36,7 +36,9 @@ const OrderCard = ({
   isFirstRender,
   notificationSettings = { sound: false, vibration: true },
   isSelected = false,
-  onLongPress = () => { }
+  onLongPress = () => { },
+  // New: control whether to navigate to deleted-orders after delete
+  navigateToDeletedOnDelete = false
 }) => {
   // Now you can directly use `isSelected` safely
 
@@ -365,93 +367,140 @@ const OrderCard = ({
   }, [order, onActionComplete]);
 
   const handleDelete = useCallback(() => {
+    // Web-specific simple confirm flow (consistent with other actions)
     if (Platform.OS === 'web') {
-      const ok = window.confirm('Are you sure you want to delete this order?');
+      const ok = window.confirm('Are you sure you want to delete this order? It will move to Deleted Orders.');
       if (!ok) return;
       (async () => {
         try {
           setIsProcessing(true);
-          console.log('Deleting order:', order._id);
-          const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
-          console.log('Delete response:', response);
 
-          if (!response) throw new Error('No response from server');
-
-          const deletedOrder = {
-            ...order,
-            status: 'deleted',
-            deletedFrom: 'orderCard',
-            ...response
-          };
-
-          onActionComplete?.(deletedOrder, 'deleted');
-
-          // Fade out animation before deletion
+          // Start fade out animation immediately for better UX
           Animated.timing(fadeAnim, {
             toValue: 0,
             duration: 300,
             useNativeDriver: true
-          }).start(() => {
-            alert('Order deleted');
-            try { router.replace('/deleted-orders'); } catch (_) {}
-          });
+          }).start();
+
+          try {
+            console.log('Attempting to soft-delete order:', order._id);
+            const response = await deleteOrder(order._id, { deletedFrom: 'admin' });
+            console.log('Soft delete response:', response);
+
+            if (!response) {
+              throw new Error('No response received from server');
+            }
+
+            const deletedOrder = {
+              ...order,
+              status: 'deleted',
+              deletedAt: new Date().toISOString(),
+              deletedFrom: 'admin',
+              ...response,
+            };
+
+            onActionComplete?.(deletedOrder, 'deleted');
+
+            try {
+              alert('Order moved to trash');
+            } catch (_) {}
+
+            if (navigateToDeletedOnDelete) {
+              try {
+                router.replace('/deleted-orders?refresh=1');
+              } catch (navErr) {
+                console.warn('Navigation to deleted-orders failed:', navErr?.message);
+              }
+            }
+          } catch (apiError) {
+            console.error('API Error deleting order:', apiError);
+            fadeAnim.setValue(1);
+            throw apiError;
+          }
         } catch (error) {
-          console.error('Error deleting order:', error);
-          alert(error.message || 'Failed to delete order');
-          fadeAnim.setValue(1);
+          console.error('Error in delete handler:', error);
+          if (!error.handled) {
+            alert(error.message || 'Failed to delete order. Please try again.');
+          }
         } finally {
           setIsProcessing(false);
-          closeAllActions();
+          closeAllActions?.();
         }
       })();
       return;
     }
     Alert.alert(
       'Delete Order',
-      'Are you sure you want to delete this order?',
+      'Are you sure you want to delete this order? It will move to Deleted Orders.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete', style: 'destructive', onPress: async () => {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
             try {
               setIsProcessing(true);
-              console.log('Deleting order:', order._id);
-              const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
-              console.log('Delete response:', response);
 
-              if (!response) throw new Error('No response from server');
-
-              const deletedOrder = {
-                ...order,
-                status: 'deleted',
-                deletedFrom: 'orderCard',
-                ...response
-              };
-
-              onActionComplete?.(deletedOrder, 'deleted');
-
-              // Fade out animation before deletion
+              // Start fade out animation immediately for better UX
               Animated.timing(fadeAnim, {
                 toValue: 0,
                 duration: 300,
                 useNativeDriver: true
-              }).start(() => {
-                Alert.alert('Success', 'Order deleted');
-                try { router.replace('/deleted-orders'); } catch (_) {}
-              });
+              }).start();
+
+              try {
+                console.log('Attempting to soft-delete order:', order._id);
+                const response = await deleteOrder(order._id, { deletedFrom: 'admin' });
+                console.log('Soft delete response:', response);
+
+                if (!response) {
+                  throw new Error('No response received from server');
+                }
+
+                const deletedOrder = {
+                  ...order,
+                  status: 'deleted',
+                  deletedAt: new Date().toISOString(),
+                  deletedFrom: 'admin',
+                  ...response,
+                };
+
+                // Update parent list
+                onActionComplete?.(deletedOrder, 'deleted');
+
+                // Show success like dashboard
+                try {
+                  Alert.alert('Success', 'Order moved to trash');
+                } catch (_) {}
+
+                // Optionally navigate to Deleted Orders
+                if (navigateToDeletedOnDelete) {
+                  try {
+                    router.replace('/deleted-orders?refresh=1');
+                  } catch (navErr) {
+                    console.warn('Navigation to deleted-orders failed:', navErr?.message);
+                  }
+                }
+              } catch (apiError) {
+                console.error('API Error deleting order:', apiError);
+                fadeAnim.setValue(1);
+                throw apiError;
+              }
             } catch (error) {
-              console.error('Error deleting order:', error);
-              Alert.alert('Error', error.message || 'Failed to delete order');
-              fadeAnim.setValue(1);
+              console.error('Error in delete handler:', error);
+              if (!error.handled) {
+                Alert.alert('Error', error.message || 'Failed to delete order. Please try again.');
+              }
             } finally {
               setIsProcessing(false);
-              closeAllActions();
+              closeAllActions?.();
             }
           }
         }
-      ]
+      ],
+      { cancelable: true }
     );
-  }, [fadeAnim, onActionComplete, order]);
+  }, [order, fadeAnim, onActionComplete, closeAllActions, navigateToDeletedOnDelete]);
 
   // Navigate to Edit Order screen
   const handleEdit = useCallback(() => {
