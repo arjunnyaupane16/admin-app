@@ -103,11 +103,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titleContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     alignItems: 'center',
-    zIndex: -1,
   },
   title: {
     color: '#fff',
@@ -117,7 +114,6 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
   },
   backButton: {
     marginRight: 10,
@@ -131,6 +127,7 @@ const styles = StyleSheet.create({
   navItem: {
     alignItems: 'center',
     paddingHorizontal: 5,
+    marginLeft: 15,
   },
   activeNavItem: {
     borderBottomWidth: 2,

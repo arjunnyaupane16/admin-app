@@ -171,6 +171,8 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingBottom: 30,
+    paddingHorizontal: 15,
+    paddingTop: 20,
   },
   welcomeContainer: {
     height: 200,
@@ -211,15 +213,16 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 0,
     marginBottom: 25,
   },
   actionCard: {
-    width: '48%',
+    width: '47%',
     aspectRatio: 1,
     borderRadius: 10,
     marginBottom: 15,
+    marginHorizontal: 6,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
@@ -227,6 +230,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    // Web enhancements
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+        cursor: 'pointer',
+      },
+    }),
   },
   actionIcon: {
     marginBottom: 10,
