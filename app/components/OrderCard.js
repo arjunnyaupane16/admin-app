@@ -18,7 +18,7 @@ import {
   View,
   findNodeHandle
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import styles from '../styles/OrdersStyles';
 import { deleteOrder, markOrderAsPaid, updateOrderStatus } from '../utils/orderApi';
 
