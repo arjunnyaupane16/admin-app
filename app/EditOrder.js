@@ -8,7 +8,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Platform
 } from 'react-native';
 import { updateOrder } from './utils/orderApi';
 
@@ -139,16 +140,21 @@ const EditOrder = () => {
       
       await updateOrder(order._id, orderToUpdate);
       
-      Alert.alert(
-        'Success', 
-        'Order updated successfully!',
-        [
-          { 
-            text: 'OK', 
-            onPress: () => router.back() 
-          }
-        ]
-      );
+      if (Platform.OS === 'web') {
+        alert('Order updated successfully!');
+        router.back();
+      } else {
+        Alert.alert(
+          'Success', 
+          'Order updated successfully!',
+          [
+            { 
+              text: 'OK', 
+              onPress: () => router.back() 
+            }
+          ]
+        );
+      }
       
     } catch (error) {
       console.error('Failed to update order:', error);

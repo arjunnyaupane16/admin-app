@@ -16,6 +16,7 @@ import {
   View,
   Vibration,
   findNodeHandle,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 // Using inline styles since the external styles file might not exist
@@ -399,6 +400,35 @@ const OrderCard = ({
 
   // Handle mark as paid with confirmation
   const handleMarkAsPaid = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Mark this order as paid?');
+      if (!ok) return;
+      (async () => {
+        try {
+          setIsProcessing(true);
+          console.log('Marking order as paid:', order._id);
+          const response = await markOrderAsPaid(order._id);
+          console.log('Mark as paid response:', response);
+
+          if (!response) throw new Error('No response from server');
+
+          const updatedOrder = {
+            ...order,
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            ...response
+          };
+
+          onActionComplete?.(updatedOrder, 'paid');
+        } catch (error) {
+          console.error('Error marking order as paid:', error);
+          alert(error.message || 'Failed to mark order as paid');
+        } finally {
+          setIsProcessing(false);
+        }
+      })();
+      return;
+    }
     Alert.alert(
       'Confirm',
       'Mark this order as paid?',
@@ -436,6 +466,44 @@ const OrderCard = ({
 
   // Handle delete order with confirmation
   const handleDelete = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Are you sure you want to delete this order?');
+      if (!ok) return;
+      (async () => {
+        try {
+          setIsProcessing(true);
+          console.log('Deleting order:', order._id);
+          const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
+          console.log('Delete response:', response);
+
+          if (!response) throw new Error('No response from server');
+
+          const deletedOrder = {
+            ...order,
+            status: 'deleted',
+            deletedFrom: 'orderCard',
+            ...response
+          };
+
+          onActionComplete?.(deletedOrder, 'deleted');
+
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true
+          }).start(() => {
+            alert('Order deleted');
+          });
+        } catch (error) {
+          console.error('Error deleting order:', error);
+          alert(error.message || 'Failed to delete order');
+          fadeAnim.setValue(1);
+        } finally {
+          setIsProcessing(false);
+        }
+      })();
+      return;
+    }
     Alert.alert(
       'Delete Order',
       'Are you sure you want to delete this order?',
@@ -445,7 +513,7 @@ const OrderCard = ({
             try {
               setIsProcessing(true);
               console.log('Deleting order:', order._id);
-              const response = await deleteOrder(order._id, 'orderCard');
+              const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
               console.log('Delete response:', response);
 
               if (!response) throw new Error('No response from server');

@@ -503,16 +503,16 @@ const OrderCard = ({
           }
         }
       );
+    } else if (Platform.OS === 'web') {
+      // Simple web confirm flow
+      const ok = window.confirm('Call customer?');
+      if (ok) handleCallCustomer();
     } else {
-      // For Android, you can use Alert.alert or another solution
-      Alert.alert(
-        'Actions',
-        'Choose an action',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Call Customer', onPress: handleCallCustomer },
-        ]
-      );
+      // Android and others: Alert
+      Alert.alert('Actions', 'Choose an action', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Call Customer', onPress: handleCallCustomer },
+      ]);
     }
   };
 

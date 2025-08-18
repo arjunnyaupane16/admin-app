@@ -4,15 +4,27 @@ import {
 } from './constants';
 import { getItem } from '../utils/storage';
 
-// Create axios instance with baseURL and 30s timeout
+// Create axios instance with baseURL and longer timeout (Render free cold starts can take ~50s)
 const baseURL = ORDER_API.replace('/orders', ''); // remove /orders to get base API URL
 
 const axiosInstance = axios.create({
   baseURL,
-  timeout: 30000, // 30 seconds timeout
+  timeout: 90000, // 90 seconds timeout to survive cold starts
 });
 
 // Generic helper to try multiple request fallbacks
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const isRetriableError = (err) => {
+  const status = err?.response?.status;
+  const code = err?.code;
+  // Timeout, network error (no response), or transient server errors
+  return (
+    code === 'ECONNABORTED' ||
+    !err?.response ||
+    (status >= 500 && status <= 504)
+  );
+};
+
 const requestWithFallbacks = async (tries) => {
   const errors = [];
   
@@ -45,9 +57,25 @@ const requestWithFallbacks = async (tries) => {
           ...headers
         }
       };
-      
-      const res = await axiosInstance.request(config);
-      return res;
+
+      // Up to 3 attempts per try with backoff for transient errors
+      let attempt = 0;
+      let lastErr = null;
+      while (attempt < 3) {
+        try {
+          const res = await axiosInstance.request(config);
+          return res;
+        } catch (err) {
+          lastErr = err;
+          attempt += 1;
+          const retriable = isRetriableError(err);
+          console.warn('[API attempt failed]', method.toUpperCase(), url, `attempt ${attempt}`, retriable ? 'retriable' : 'not retriable', err?.message);
+          if (!retriable || attempt >= 3) break;
+          // Exponential backoff: 1s, 2s
+          await sleep(1000 * attempt);
+        }
+      }
+      throw lastErr || new Error('Unknown request error');
       
     } catch (err) {
       const status = err?.response?.status;
@@ -87,8 +115,8 @@ const requestWithFallbacks = async (tries) => {
 axiosInstance.interceptors.request.use(async (config) => {
   try {
     const token = await getItem('authToken');
-    // Attach only if token looks like a real JWT (e.g., has at least two dots)
-    if (token && typeof token === 'string' && token.split('.').length >= 3) {
+    // Attach for any non-empty string token (web uses a dummy token during dev)
+    if (token && typeof token === 'string' && token.trim().length > 0) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
