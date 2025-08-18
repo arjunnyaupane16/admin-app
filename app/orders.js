@@ -1,10 +1,11 @@
-import { useRouter, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
   FlatList,
+  Platform,
   RefreshControl,
   Text,
   TouchableOpacity,
@@ -13,7 +14,7 @@ import {
 import OrderCard from './components/OrderCard';
 import styles from './styles/OrdersStyles';
 import { fetchOrders } from './utils/orderApi';
-import { navigateToDeletedOrders } from './utils/navigation';
+// removed navigateToDeletedOrders import (unused and may not exist on web)
 
 export default function OrdersScreen() {
 
@@ -45,18 +46,16 @@ export default function OrdersScreen() {
     loadPaidOrders();
   }, []);
 
-  // ✅ Handle hardware back button
+  // ✅ Handle hardware back button (native only)
   useEffect(() => {
+    if (Platform.OS === 'web') return; // no hardware back on web
+
     const backAction = () => {
-      router.back(); // Navigate back to previous screen
+      router.back();
       return true;
     };
 
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
     return () => backHandler.remove();
   }, []);
 

@@ -232,19 +232,26 @@ const OrderCard = ({
     setDotPressed(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Scroll the card into view with smooth animation
-    if (scrollViewRef.current && cardRef.current) {
-      cardRef.current.measureLayout(
-        findNodeHandle(scrollViewRef.current),
-        (x, y) => {
-          scrollViewRef.current.scrollTo({
-            y: y - 20,
-            animated: true,
-            duration: 500
-          });
-        },
-        () => console.log('measurement failed')
-      );
+    // Scroll the card into view with smooth animation (web-safe)
+    try {
+      const listRef = scrollViewRef?.current;
+      if (listRef && cardRef.current && cardRef.current.measureLayout) {
+        const parentNode = findNodeHandle(listRef);
+        cardRef.current.measureLayout(
+          parentNode,
+          (x, y) => {
+            // Prefer FlatList API when available
+            if (typeof listRef.scrollToOffset === 'function') {
+              listRef.scrollToOffset({ offset: Math.max(y - 20, 0), animated: true });
+            } else if (typeof listRef.scrollTo === 'function') {
+              listRef.scrollTo({ y: Math.max(y - 20, 0), animated: true });
+            }
+          },
+          () => console.log('measurement failed')
+        );
+      }
+    } catch (_) {
+      // no-op on platforms where measuring/scrolling isn't supported
     }
 
     // Bounce animation when dot is pressed
@@ -403,7 +410,7 @@ const OrderCard = ({
 
             try {
               alert('Order moved to trash');
-            } catch (_) {}
+            } catch (_) { }
 
             if (navigateToDeletedOnDelete) {
               try {
@@ -471,7 +478,7 @@ const OrderCard = ({
                 // Show success like dashboard
                 try {
                   Alert.alert('Success', 'Order moved to trash');
-                } catch (_) {}
+                } catch (_) { }
 
                 // Optionally navigate to Deleted Orders
                 if (navigateToDeletedOnDelete) {
@@ -569,6 +576,8 @@ const OrderCard = ({
 
   return (
     <Animated.View
+      ref={cardRef} // Attach ref to the card container
+      onLayout={handleLayout}
       style={[
         styles.orderCard,
         order.status === 'pending' && styles.orderCardPending,
@@ -578,7 +587,6 @@ const OrderCard = ({
         isOld && styles.oldOrder,
         isVeryRecent && styles.veryRecentOrder,
       ]}
-      onLayout={handleLayout}
     >
       <TouchableOpacity
         activeOpacity={0.9}
@@ -649,173 +657,173 @@ const OrderCard = ({
             </TouchableOpacity>
           </View>
         </View>
+      </TouchableOpacity>
 
-        {expanded && (
-          <View style={styles.expandedContent}>
-            <View style={styles.customerInfo}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.customerName}>
-                  {order.customer?.name || 'Guest Customer'}
-                </Text>
-                {order.customer?.phone && (
-                  <Text style={[styles.customerName, { fontSize: 14, color: '#555', marginTop: 4 }]}>
-                    {order.customer.phone}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.phoneButton}
-                onPress={handleCallCustomer}
-                disabled={isProcessing}
-              >
-                <Icon name="phone" size={16} color="#fff" />
-                <Text style={styles.phoneText}>Call</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.orderItems}>
-              {order.items?.map((item, index) => {
-                // Get size from item (Half/Full)
-                const size = item.size || 'Full'; // Default to Full if size is not specified
-
-                // Clean the item name by removing any size in parentheses
-                const itemName = item.name ?
-                  item.name.replace(/\s*\(Half|Full\)/i, '').trim() : 'Unnamed Item';
-
-                // Format as "Item Name (Size)"
-                const displayName = `${itemName} (${size})`;
-
-                return (
-                  <View key={index} style={styles.orderItem}>
-                    <Text style={styles.itemName}>
-                      {item.quantity}x {displayName}
-                    </Text>
-                    <Text style={styles.itemPrice}>
-                      Rs.{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            <View style={styles.orderTotalRow}>
-              <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalAmount}>
-                Rs.{
-                  (typeof order.totalAmount === 'number'
-                    ? order.totalAmount
-                    : (typeof order.total === 'number' ? order.total : 0)
-                  ).toFixed(2)
-                }
+      {expanded && (
+        <View style={styles.expandedContent}>
+          <View style={styles.customerInfo}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.customerName}>
+                {order.customer?.name || 'Guest Customer'}
               </Text>
-            </View>
-
-            {/* Special Instructions */}
-            {order.specialInstructions && (
-              <View style={styles.specialInstructionsContainer}>
-                <Text style={styles.specialInstructionsLabel}>Special Instructions:</Text>
-                <Text style={styles.specialInstructionsText}>{order.specialInstructions}</Text>
-              </View>
+            {order.customer?.phone && (
+              <Text style={[styles.customerName, { fontSize: 14, color: '#555', marginTop: 4 }]}>
+                {order.customer.phone}
+              </Text>
             )}
+          </View>
+          <TouchableOpacity
+            style={styles.phoneButton}
+            onPress={handleCallCustomer}
+            disabled={isProcessing}
+          >
+            <Icon name="phone" size={16} color="#fff" />
+            <Text style={styles.phoneText}>Call</Text>
+          </TouchableOpacity>
+        </View>
 
-            <View style={styles.actionButtonsContainer}>
-              {/* First Row */}
-              <View style={styles.actionButtonRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    styles.confirmButton,
-                    order.status === 'confirmed' && styles.buttonDisabled
-                  ]}
-                  onPress={handleOrderConfirm}
-                  disabled={isProcessing || order.status === 'confirmed'}
-                  testID="confirm-button"
-                >
-                  <Icon name="check" size={16} color="#fff" />
-                  <Text style={styles.actionButtonText}>
-                    {order.status === 'confirmed' ? 'Confirmed' : 'Confirm'}
-                  </Text>
-                </TouchableOpacity>
+        <View style={styles.orderItems}>
+          {order.items?.map((item, index) => {
+            // Get size from item (Half/Full)
+            const size = item.size || 'Full'; // Default to Full if size is not specified
 
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    { backgroundColor: '#FFA726' }
-                  ]}
-                  onPress={handleEdit}
-                  disabled={isProcessing}
-                  testID="edit-button"
-                >
-                  <Icon name="edit" size={16} color="#fff" />
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
+            // Clean the item name by removing any size in parentheses
+            const itemName = item.name ?
+              item.name.replace(/\s*\(Half|Full\)/i, '').trim() : 'Unnamed Item';
 
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    { backgroundColor: '#f44336' }
-                  ]}
-                  onPress={handleDelete}
-                  disabled={isProcessing}
-                  testID="delete-button"
-                >
-                  <Icon name="delete" size={16} color="#fff" />
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
+            // Format as "Item Name (Size)"
+            const displayName = `${itemName} (${size})`;
 
-              {/* Second Row */}
-              <View style={[styles.actionButtonRow, { marginTop: 8 }]}>
-                {order.paymentStatus !== 'paid' && (
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.payButton,
-                      order.paymentStatus === 'paid' && styles.buttonDisabled
-                    ]}
-                    onPress={handleMarkAsPaid}
-                    disabled={isProcessing || order.paymentStatus === 'paid'}
-                    testID="mark-paid-button"
-                  >
-                    <Icon name="check" size={16} color="#fff" />
-                    <Text style={styles.actionButtonText}>
-                      {order.paymentStatus === 'paid' ? 'Paid' : 'Mark Paid'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    styles.moreButton,
-                    { flex: 1, maxWidth: 120 }
-                  ]}
-                  onPress={showActionMenu}
-                  disabled={isProcessing}
-                >
-                  <Icon name="more-horiz" size={20} color="#fff" />
-                  <Text style={styles.actionButtonText}>More</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.orderFooter}>
-              <Text style={styles.orderDate}>
-                Ordered on {formatDate()} at {formatTime()}
-              </Text>
-              <Text style={styles.orderIdFull}>
-                Order ID: {order._id}
-              </Text>
-              {order.scheduledForDeletion && (
-                <Text style={styles.oldOrderWarning}>
-                  This order is older than 24 hours and will be automatically deleted soon
+            return (
+              <View key={index} style={styles.orderItem}>
+                <Text style={styles.itemName}>
+                  {item.quantity}x {displayName}
                 </Text>
-              )}
-            </View>
+                <Text style={styles.itemPrice}>
+                  Rs.{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={styles.orderTotalRow}>
+          <Text style={styles.totalLabel}>Total:</Text>
+          <Text style={styles.totalAmount}>
+            Rs.{
+              (typeof order.totalAmount === 'number'
+                ? order.totalAmount
+                : (typeof order.total === 'number' ? order.total : 0)
+              ).toFixed(2)
+            }
+          </Text>
+        </View>
+
+        {/* Special Instructions */}
+        {order.specialInstructions && (
+          <View style={styles.specialInstructionsContainer}>
+            <Text style={styles.specialInstructionsLabel}>Special Instructions:</Text>
+            <Text style={styles.specialInstructionsText}>{order.specialInstructions}</Text>
           </View>
         )}
-      </TouchableOpacity>
-    </Animated.View>
+
+        <View style={styles.actionButtonsContainer}>
+          {/* First Row */}
+          <View style={styles.actionButtonRow}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.confirmButton,
+                order.status === 'confirmed' && styles.buttonDisabled
+              ]}
+              onPress={handleOrderConfirm}
+              disabled={isProcessing || order.status === 'confirmed'}
+              testID="confirm-button"
+            >
+              <Icon name="check" size={16} color="#fff" />
+              <Text style={styles.actionButtonText}>
+                {order.status === 'confirmed' ? 'Confirmed' : 'Confirm'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { backgroundColor: '#FFA726' }
+              ]}
+              onPress={handleEdit}
+              disabled={isProcessing}
+              testID="edit-button"
+            >
+              <Icon name="edit" size={16} color="#fff" />
+              <Text style={styles.actionButtonText}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { backgroundColor: '#f44336' }
+              ]}
+              onPress={handleDelete}
+              disabled={isProcessing}
+              testID="delete-button"
+            >
+              <Icon name="delete" size={16} color="#fff" />
+              <Text style={styles.actionButtonText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Second Row */}
+          <View style={[styles.actionButtonRow, { marginTop: 8 }]}>
+            {order.paymentStatus !== 'paid' && (
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.payButton,
+                  order.paymentStatus === 'paid' && styles.buttonDisabled
+                ]}
+                onPress={handleMarkAsPaid}
+                disabled={isProcessing || order.paymentStatus === 'paid'}
+                testID="mark-paid-button"
+              >
+                <Icon name="check" size={16} color="#fff" />
+                <Text style={styles.actionButtonText}>
+                  {order.paymentStatus === 'paid' ? 'Paid' : 'Mark Paid'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.moreButton,
+                { flex: 1, maxWidth: 120 }
+              ]}
+              onPress={showActionMenu}
+              disabled={isProcessing}
+            >
+              <Icon name="more-horiz" size={20} color="#fff" />
+              <Text style={styles.actionButtonText}>More</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.orderFooter}>
+          <Text style={styles.orderDate}>
+            Ordered on {formatDate()} at {formatTime()}
+          </Text>
+          <Text style={styles.orderIdFull}>
+            Order ID: {order._id}
+          </Text>
+          {order.scheduledForDeletion && (
+            <Text style={styles.oldOrderWarning}>
+              This order is older than 24 hours and will be automatically deleted soon
+            </Text>
+          )}
+        </View>
+      </View>
+    )}
+    </Animated.View >
   );
 };
 
