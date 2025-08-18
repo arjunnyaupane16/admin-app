@@ -6,13 +6,17 @@ if (Platform.OS !== 'web') {
   require('react-native-gesture-handler');
 }
 // Only require TapGestureHandler on native; on web use a no-op wrapper
-let TapGestureWrapper = ({ children, onActivated }) => (
-  <Pressable onPress={onActivated}>{children}</Pressable>
+let TapGestureWrapper = ({ children, onActivated, style }) => (
+  <Pressable onPress={onActivated} style={style}>
+    {children}
+  </Pressable>
 );
 if (Platform.OS !== 'web') {
   const { TapGestureHandler } = require('react-native-gesture-handler');
-  TapGestureWrapper = ({ children, onActivated }) => (
-    <TapGestureHandler onActivated={onActivated}>{children}</TapGestureHandler>
+  TapGestureWrapper = ({ children, onActivated, style }) => (
+    <TapGestureHandler onActivated={onActivated} style={style}>
+      {children}
+    </TapGestureHandler>
   );
 }
 
@@ -117,6 +121,7 @@ export default function HomeScreen() {
             <TapGestureWrapper
               key={index}
               onActivated={() => router.push(feature.route)}
+              style={styles.actionWrapper}
             >
               <View style={[styles.actionCard, { backgroundColor: feature.color }]}>
                 <MaterialIcons
@@ -162,133 +167,172 @@ export default function HomeScreen() {
       </ScrollView>
     </View>
   );
-}
-const styles = StyleSheet.create({
+} const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
-    paddingBottom: 30,
+    paddingBottom: 40,
     paddingHorizontal: 15,
     paddingTop: 20,
+    ...Platform.select({
+      web: {
+        maxWidth: 1280,       // ✅ center content on web
+        marginHorizontal: 'auto',
+        width: '100%',
+      },
+    }),
   },
   welcomeContainer: {
-    height: 200,
-    borderRadius: 10,
+    height: 220,
+    borderRadius: 12,
     overflow: 'hidden',
-    margin: 15,
-    marginBottom: 25,
+    marginBottom: 30,
     position: 'relative',
+    ...Platform.select({
+      web: {
+        height: 280,         // ✅ larger hero section on web
+      },
+    }),
   },
   welcomeImage: {
     width: '100%',
     height: '100%',
+    objectFit: 'cover',      // ✅ fixes stretched image on web
   },
   welcomeOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     padding: 20,
   },
   welcomeTitle: {
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
+    ...Platform.select({
+      web: { fontSize: 30 }, // ✅ bigger text on web
+    }),
   },
   welcomeSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 16,
+    ...Platform.select({
+      web: { fontSize: 18 },
+    }),
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: 18,
     color: '#333',
+    ...Platform.select({
+      web: { fontSize: 20, marginLeft: 4 },
+    }),
   },
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    paddingHorizontal: 0,
-    marginBottom: 25,
+    marginBottom: 30,
+    ...Platform.select({
+      web: {
+        gap: 20,             // ✅ proper spacing on grid
+        justifyContent: 'flex-start',
+      },
+    }),
+  },
+  actionWrapper: {
+    width: '47%',
+    marginBottom: 15,
+    ...Platform.select({
+      web: {
+        width: '22%',        // 4 per row on large screens
+        minWidth: 200,
+        height: 150,
+        cursor: 'pointer',
+      },
+    }),
   },
   actionCard: {
-    width: '47%',
+    flex: 1,
     aspectRatio: 1,
-    borderRadius: 10,
-    marginBottom: 15,
-    marginHorizontal: 6,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     ...Platform.select({
       web: {
-        width: '22%',     // ✅ makes 4 per row in web
-        aspectRatio: 'unset',
-        height: 120,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-        cursor: 'pointer',
+        width: '100%',
+        height: '100%',
+        boxShadow: '0 3px 10px rgba(0,0,0,0.15)',
+        transition: 'transform 0.2s ease',
       },
     }),
   },
   actionIcon: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   actionTitle: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    ...Platform.select({
+      web: { fontSize: 18 },
+    }),
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    marginBottom: 20,
     flexWrap: 'wrap',
+    marginBottom: 20,
+    gap: 15,
   },
   summaryCard: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
-    width: '31%',
+    borderRadius: 12,
+    padding: 20,
+    flexGrow: 1,
+    flexBasis: '30%',
     alignItems: 'center',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
     ...Platform.select({
       web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.12)', // ✅ web shadow
-        minWidth: 120,
+        minWidth: 220,
+        boxShadow: '0 3px 10px rgba(0,0,0,0.12)',
       },
     }),
   },
   summaryTitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
     marginTop: 5,
     textAlign: 'center',
   },
   summaryValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#4a148c',
-    marginTop: 5,
-    minHeight: 24, // Prevent layout shift when loading
+    marginTop: 6,
+    minHeight: 26,
+    ...Platform.select({
+      web: { fontSize: 22 },
+    }),
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    marginTop: 6,
   },
 });
