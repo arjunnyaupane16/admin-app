@@ -1,8 +1,20 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import 'react-native-gesture-handler';
-import { TapGestureHandler } from 'react-native-gesture-handler';
+import { Image, ScrollView, StyleSheet, Text, View, Platform, Pressable } from 'react-native';
+if (Platform.OS !== 'web') {
+  // Load gesture handler side-effects only on native
+  require('react-native-gesture-handler');
+}
+// Only require TapGestureHandler on native; on web use a no-op wrapper
+let TapGestureWrapper = ({ children, onActivated }) => (
+  <Pressable onPress={onActivated}>{children}</Pressable>
+);
+if (Platform.OS !== 'web') {
+  const { TapGestureHandler } = require('react-native-gesture-handler');
+  TapGestureWrapper = ({ children, onActivated }) => (
+    <TapGestureHandler onActivated={onActivated}>{children}</TapGestureHandler>
+  );
+}
 
 import { useEffect, useState } from 'react';
 import { fetchOrders } from './utils/orderApi';
@@ -102,7 +114,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
           {features.map((feature, index) => (
-            <TapGestureHandler
+            <TapGestureWrapper
               key={index}
               onActivated={() => router.push(feature.route)}
             >
@@ -115,7 +127,7 @@ export default function HomeScreen() {
                 />
                 <Text style={styles.actionTitle}>{feature.title}</Text>
               </View>
-            </TapGestureHandler>
+            </TapGestureWrapper>
           ))}
         </View>
 
@@ -262,6 +274,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
   },
-  textAlign: 'center',
-  paddingHorizontal: 5,
 });

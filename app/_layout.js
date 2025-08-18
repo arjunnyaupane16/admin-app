@@ -18,10 +18,16 @@ function AuthLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/login');
+    // Prevent navigation loop by checking current route
+    const currentRoute = segments[0];
+    
+    if (!isAuthenticated) {
+      if (currentRoute !== '(auth)') {
+        router.replace('/login');
+      }
     } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/index');
+      // Only redirect from auth pages if we're authenticated
+      router.replace('/');
     }
   }, [segments, isAuthenticated, isLoading]);
 

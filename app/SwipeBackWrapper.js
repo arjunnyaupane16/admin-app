@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { StyleSheet } from 'react-native';
-import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Platform, StyleSheet, View } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 export default function SwipeBackWrapper({ children }) {
   const router = useRouter();
@@ -9,7 +9,7 @@ export default function SwipeBackWrapper({ children }) {
   const onHandlerStateChange = useCallback(({ nativeEvent }) => {
     if (
       nativeEvent.state === State.END &&
-      nativeEvent.translationX > 100 // swipe right by 100 px threshold
+      nativeEvent.translationX > 100
     ) {
       if (router.canGoBack()) {
         router.back();
@@ -17,14 +17,15 @@ export default function SwipeBackWrapper({ children }) {
     }
   }, [router]);
 
+  // On web, avoid PanGestureHandler to prevent WeakMap errors
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{children}</View>;
+  }
+
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <PanGestureHandler onHandlerStateChange={onHandlerStateChange}>
-        <GestureHandlerRootView style={styles.container}>
-          {children}
-        </GestureHandlerRootView>
-      </PanGestureHandler>
-    </GestureHandlerRootView>
+    <PanGestureHandler onHandlerStateChange={onHandlerStateChange}>
+      <View style={styles.container}>{children}</View>
+    </PanGestureHandler>
   );
 }
 

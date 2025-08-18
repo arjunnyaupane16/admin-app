@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import 'react-native-gesture-handler';
 
 import { useState, useMemo, useCallback } from 'react';
 import {
@@ -8,7 +7,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
+
+// Only load gesture-handler side effects on native
+if (Platform.OS !== 'web') {
+  require('react-native-gesture-handler');
+}
 
 import OrderCard from './components/OrderCard';
 import { fetchAdminOrders } from './utils/orderApi';

@@ -11,19 +11,32 @@ const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const storedAuth = await getItem('authToken');
-      const storedUser = await getItem('userData');
+      const [storedAuth, storedUser] = await Promise.all([
+        getItem('authToken'),
+        getItem('userData')
+      ]);
 
       console.log('checkAuthStatus - storedAuth:', storedAuth);
       console.log('checkAuthStatus - storedUser:', storedUser);
 
       if (storedAuth && storedUser) {
         try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
+          // Ensure we're working with a proper string
+          const userString = typeof storedUser === 'string' ? storedUser : JSON.stringify(storedUser);
+          const parsedUser = JSON.parse(userString);
+          
+          // Ensure we only set serializable data
+          const safeUserData = JSON.parse(JSON.stringify(parsedUser));
+          
+          setUser(safeUserData);
           setIsAuthenticated(true);
         } catch (error) {
-          console.error('Failed to parse storedUser JSON:', error);
+          console.error('Failed to process user data:', error);
+          // Clear invalid data
+          await Promise.all([
+            deleteItem('authToken'),
+            deleteItem('userData')
+          ]);
           setIsAuthenticated(false);
           setUser(null);
         }
@@ -57,14 +70,17 @@ const AuthProvider = ({ children }) => {
           lastLogin: new Date().toISOString(),
         };
 
+        // Ensure we're only storing serializable data
+        const serializedUser = JSON.parse(JSON.stringify(userData));
+        
         await setItem('authToken', 'dummy-auth-token');
-        await setItem('userData', JSON.stringify(userData));
+        await setItem('userData', JSON.stringify(serializedUser));
 
-        // Update state first
+        // Update state with serialized data
         setIsAuthenticated(true);
-        setUser(userData);
+        setUser(serializedUser);
 
-        console.log('Login successful:', userData);
+        console.log('Login successful:', serializedUser);
         
         // Let the AuthLayout handle the navigation
         return true;
