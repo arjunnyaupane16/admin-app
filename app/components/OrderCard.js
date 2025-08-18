@@ -540,12 +540,12 @@ const OrderCard = ({
     }
   };
 
-  // Close all action menus
-  const closeAllActions = () => {
+  // Close all action menus (use function declaration so it's hoisted)
+  function closeAllActions() {
     // Implementation depends on your action menu implementation
     // This is a placeholder for the actual implementation
     console.log('Closing all action menus');
-  };
+  }
 
   // Show action menu
   const showActionMenu = () => {

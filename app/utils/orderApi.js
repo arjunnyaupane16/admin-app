@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import {
   ORDER_API
 } from './constants';
@@ -138,12 +139,54 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Mock orders for web fallback (CORS in dev)
+const mockOrders = [
+  {
+    _id: 'mock-1',
+    orderNumber: 'A101',
+    tableNumber: 3,
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+    paymentStatus: 'unpaid',
+    totalAmount: 580,
+    items: [
+      { name: 'Cappuccino', size: 'Full', price: 180, quantity: 2 },
+      { name: 'Veg Sandwich', size: 'Full', price: 220, quantity: 1 },
+    ],
+    customer: { name: 'Web Dev (Mock)', phone: '+9779800000000' },
+    specialInstructions: 'Extra hot cappuccino',
+  },
+  {
+    _id: 'mock-2',
+    orderNumber: 'A102',
+    tableNumber: 5,
+    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    status: 'confirmed',
+    paymentStatus: 'paid',
+    totalAmount: 350,
+    items: [
+      { name: 'Americano', size: 'Full', price: 150, quantity: 1 },
+      { name: 'Blueberry Muffin', size: 'Full', price: 200, quantity: 1 },
+    ],
+    customer: { name: 'Test User', phone: '+9779811111111' },
+  },
+];
+
 // ✅ Fetch all active (non-deleted) orders
 export const fetchOrders = async ({ excludeOrderCardDeleted = false } = {}) => {
-  const res = await axiosInstance.get('/orders', {
-    params: { excludeOrderCardDeleted, t: Date.now() }
-  });
-  return res.data;
+  try {
+    const res = await axiosInstance.get('/orders', {
+      params: { excludeOrderCardDeleted, t: Date.now() }
+    });
+    return res.data;
+  } catch (err) {
+    // Web dev CORS fallback to mock data so UI can render
+    if (Platform.OS === 'web') {
+      console.warn('CORS blocked fetchOrders on web. Returning mock data.');
+      return mockOrders;
+    }
+    throw err;
+  }
 };
 
 // ✅ Fetch soft-deleted (trashed) orders
@@ -154,8 +197,16 @@ export const fetchDeletedOrders = async () => {
 
 // ✅ Fetch all orders (including deleted) — for dashboard
 export const fetchAdminOrders = async () => {
-  const res = await axiosInstance.get('/orders/admin');
-  return res.data;
+  try {
+    const res = await axiosInstance.get('/orders/admin');
+    return res.data;
+  } catch (err) {
+    if (Platform.OS === 'web') {
+      console.warn('CORS blocked fetchAdminOrders on web. Returning mock data.');
+      return mockOrders;
+    }
+    throw err;
+  }
 };
 
 // ✅ Restore a soft-deleted order

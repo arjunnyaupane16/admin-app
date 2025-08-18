@@ -71,7 +71,7 @@ export default function TopNavBar() {
             <Text style={styles.navText}>Dashboard</Text>
           </TouchableOpacity>
 
-          {/* ✅ Logout button shown only when authenticated and not loading */}
+          {/* Logout button shown only when authenticated and not loading */}
           {!isLoading && isAuthenticated && (
             <TouchableOpacity onPress={logout} style={styles.navItem}>
               <Ionicons name="log-out" size={22} color="rgba(255,255,255,0.7)" />
@@ -82,7 +82,9 @@ export default function TopNavBar() {
       </Container>
     </View>
   );
-} const styles = StyleSheet.create({
+}
+
+const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: '#6a1b9a',
     ...Platform.select({
