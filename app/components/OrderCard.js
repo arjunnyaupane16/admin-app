@@ -283,97 +283,47 @@ const OrderCard = ({
     }
   }, [order.customer?.phone]);
 
-  const handleOrderConfirm = useCallback(() => {
-    if (Platform.OS === 'web') {
-      const ok = window.confirm('Mark this order as confirmed?');
-      if (!ok) return;
-      (async () => {
-        try {
-          setIsProcessing(true);
-          const response = await updateOrderStatus(order._id, 'confirmed');
-          if (response) {
-            onActionComplete({ ...order, status: 'confirmed' }, 'confirmed');
-          }
-        } catch (error) {
-          console.error('Error confirming order:', error);
-          alert(error.message || 'Failed to confirm order');
-        } finally {
-          setIsProcessing(false);
-        }
-      })();
-      return;
+  const handleOrderConfirm = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Confirm Order',
+      message: 'Mark this order as confirmed?',
+      confirmText: 'Confirm Order',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+    try {
+      setIsProcessing(true);
+      const response = await updateOrderStatus(order._id, 'confirmed');
+      if (response) {
+        onActionComplete({ ...order, status: 'confirmed' }, 'confirmed');
+      }
+    } catch (error) {
+      console.error('Error confirming order:', error);
+    } finally {
+      setIsProcessing(false);
     }
-    Alert.alert(
-      'Confirm Order',
-      'Mark this order as confirmed?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm Order',
-          onPress: async () => {
-            try {
-              setIsProcessing(true);
-              const response = await updateOrderStatus(order._id, 'confirmed');
-              if (response) {
-                onActionComplete({ ...order, status: 'confirmed' }, 'confirmed');
-              }
-            } catch (error) {
-              console.error('Error confirming order:', error);
-              Alert.alert('Error', error.message || 'Failed to confirm order');
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      ]
-    );
-  }, [order, onActionComplete]);
+  }, [order, onActionComplete, confirm]);
 
-  const handleMarkAsPaid = useCallback(() => {
-    if (Platform.OS === 'web') {
-      const ok = window.confirm('Mark this order as paid?');
-      if (!ok) return;
-      (async () => {
-        try {
-          setIsProcessing(true);
-          const response = await markOrderAsPaid(order._id);
-          if (response) {
-            onActionComplete({ ...order, paymentStatus: 'paid' }, 'paid');
-          }
-        } catch (error) {
-          console.error('Error marking as paid:', error);
-          alert(error.message || 'Failed to mark as paid');
-        } finally {
-          setIsProcessing(false);
-        }
-      })();
-      return;
+  const handleMarkAsPaid = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Confirm Payment',
+      message: 'Mark this order as paid?',
+      confirmText: 'Mark as Paid',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+    try {
+      setIsProcessing(true);
+      const response = await markOrderAsPaid(order._id);
+      if (response) {
+        onActionComplete({ ...order, paymentStatus: 'paid' }, 'paid');
+      }
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+    } finally {
+      setIsProcessing(false);
     }
-    Alert.alert(
-      'Confirm Payment',
-      'Mark this order as paid?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark as Paid',
-          onPress: async () => {
-            try {
-              setIsProcessing(true);
-              const response = await markOrderAsPaid(order._id);
-              if (response) {
-                onActionComplete({ ...order, paymentStatus: 'paid' }, 'paid');
-              }
-            } catch (error) {
-              console.error('Error marking as paid:', error);
-              Alert.alert('Error', error.message || 'Failed to mark as paid');
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      ]
-    );
-  }, [order, onActionComplete]);
+  }, [order, onActionComplete, confirm]);
 
   const handleDelete = useCallback(async () => {
     const ok = await confirm({
@@ -490,9 +440,11 @@ const OrderCard = ({
         }
       );
     } else if (Platform.OS === 'web') {
-      // Simple web confirm flow
-      const ok = window.confirm('Call customer?');
-      if (ok) handleCallCustomer();
+      // Use in-app confirm for web too
+      (async () => {
+        const ok = await confirm({ title: 'Call Customer', message: 'Call customer?', confirmText: 'Call', cancelText: 'Cancel' });
+        if (ok) handleCallCustomer();
+      })();
     } else {
       // Android and others: Alert
       Alert.alert('Actions', 'Choose an action', [

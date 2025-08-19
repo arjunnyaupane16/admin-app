@@ -21,6 +21,7 @@ import {
   permanentlyDeleteOrder,
   restoreOrder,
 } from './utils/orderApi';
+import { useConfirm } from './components/ConfirmProvider';
 
 const DeletedOrdersScreen = () => {
   const router = useRouter();
@@ -30,6 +31,7 @@ const DeletedOrdersScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const { confirm } = useConfirm();
 
   const loadDeletedOrders = useCallback(async (isRefreshing = false) => {
     try {
@@ -123,7 +125,7 @@ const DeletedOrdersScreen = () => {
     }
 
     const message = `Are you sure you want to ${actionLabel.toLowerCase()} ${targetOrders.length} order${targetOrders.length > 1 ? 's' : ''}?`;
-    
+
     const performAction = async () => {
       try {
         // Show loading state
@@ -170,26 +172,16 @@ const DeletedOrdersScreen = () => {
       }
     };
 
-    // Show confirmation dialog
-    if (Platform.OS === 'web') {
-      if (window.confirm(message)) {
-        performAction();
-      }
-    } else {
-      Alert.alert(
-        actionLabel,
-        message,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: actionLabel,
-            style: 'destructive',
-            onPress: performAction,
-          },
-        ]
-      );
-    }
-  }, [selectedOrders, deletedOrders, loadDeletedOrders]);
+    // Show in-app confirmation modal
+    const ok = await confirm({
+      title: actionLabel,
+      message,
+      confirmText: actionLabel,
+      cancelText: 'Cancel',
+      danger: actionFn === permanentlyDeleteOrder,
+    });
+    if (ok) await performAction();
+  }, [selectedOrders, deletedOrders, loadDeletedOrders, confirm]);
 
   const restoreSelected = () =>
     confirmAction('Restore', restoreOrder, 'Orders restored successfully.');
