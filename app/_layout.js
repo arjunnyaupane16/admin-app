@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import TopNavBar from './components/TopNavBar';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import SwipeBackWrapper from './SwipeBackWrapper';
+import { ConfirmProvider } from './components/ConfirmProvider';
 
 function AuthLayout() {
   const { isAuthenticated, isLoading, checkAuthStatus } = useContext(AuthContext);
@@ -84,7 +85,9 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <SwipeBackWrapper>
         <AuthProvider>
-          <AuthLayout />
+          <ConfirmProvider>
+            <AuthLayout />
+          </ConfirmProvider>
         </AuthProvider>
       </SwipeBackWrapper>
     </RootView>
