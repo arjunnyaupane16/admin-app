@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 70,             // ✅ logo space reserved
+    minWidth: 70, // ✅ logo space reserved
   },
   titleContainer: {
     flex: 1,
