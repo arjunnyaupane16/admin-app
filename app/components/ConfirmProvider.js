@@ -19,6 +19,12 @@ export const ConfirmProvider = ({ children }) => {
   const hide = useCallback(() => setVisible(false), []);
 
   const confirm = useCallback(async (opts = {}) => {
+    // Web: auto-confirm without showing any prompt
+    if (Platform.OS === 'web') {
+      return true;
+    }
+
+    // Native platforms / fallback: show in-app modal and resolve based on user choice
     return new Promise((resolve) => {
       resolverRef.current = resolve;
       setOptions((prev) => ({ ...prev, ...opts }));

@@ -211,7 +211,15 @@ export const fetchAdminOrders = async () => {
 
 // ✅ Restore a soft-deleted order
 export const restoreOrder = async (id) => {
-  const res = await axiosInstance.put(`/orders/${id}/restore`);
+  if (!id) throw new Error('Order ID is required to restore');
+  const res = await requestWithFallbacks([
+    // Dedicated restore endpoint (preferred)
+    { method: 'put', url: `/orders/${id}/restore` },
+    { method: 'post', url: `/orders/${id}/restore` },
+    // Fallback: clear deletion flags/update status
+    { method: 'patch', url: `/orders/${id}`, data: { status: 'pending', deletedAt: null, isDeleted: false } },
+    { method: 'put', url: `/orders/${id}`, data: { status: 'pending', deletedAt: null, isDeleted: false } },
+  ]);
   return res.data;
 };
 

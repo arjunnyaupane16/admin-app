@@ -1,15 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Platform
+  View
 } from 'react-native';
 import { updateOrder } from './utils/orderApi';
 
@@ -30,8 +30,8 @@ const EditOrder = () => {
         }
 
         // Parse the order data
-        const parsedOrder = typeof orderData === 'string' 
-          ? JSON.parse(orderData) 
+        const parsedOrder = typeof orderData === 'string'
+          ? JSON.parse(orderData)
           : orderData;
 
         // Ensure required fields exist
@@ -49,13 +49,13 @@ const EditOrder = () => {
           },
           specialInstructions: parsedOrder.specialInstructions || '',
           paymentMethod: parsedOrder.paymentMethod || '',
-          items: Array.isArray(parsedOrder.items) 
+          items: Array.isArray(parsedOrder.items)
             ? parsedOrder.items.map(item => ({
-                id: item.id || Math.random().toString(36).substr(2, 9),
-                name: item.name || '',
-                quantity: item.quantity || 1,
-                modifiers: Array.isArray(item.modifiers) ? item.modifiers : []
-              }))
+              id: item.id || Math.random().toString(36).substr(2, 9),
+              name: item.name || '',
+              quantity: item.quantity || 1,
+              modifiers: Array.isArray(item.modifiers) ? item.modifiers : []
+            }))
             : [],
           ...parsedOrder
         };
@@ -90,7 +90,7 @@ const EditOrder = () => {
         <Text style={styles.errorText}>
           {error || 'Failed to load order details'}
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={() => router.back()}
         >
@@ -103,15 +103,15 @@ const EditOrder = () => {
   // Save handler to update order in backend
   const handleSave = async () => {
     if (isSaving) return; // Prevent multiple saves
-    
+
     try {
       setIsSaving(true);
-      
+
       // Basic validation
       if (!order.customer?.name?.trim()) {
         throw new Error('Customer name is required');
       }
-      
+
       // Prepare the order data for submission
       const orderToUpdate = {
         ...order,
@@ -127,42 +127,42 @@ const EditOrder = () => {
           ...item,
           name: item.name?.trim() || 'Unnamed Item',
           quantity: Number(item.quantity) || 1,
-          modifiers: Array.isArray(item.modifiers) 
+          modifiers: Array.isArray(item.modifiers)
             ? item.modifiers.filter(Boolean).map(m => m.trim())
             : []
         })).filter(item => item.name !== 'Unnamed Item' || item.quantity > 0)
       };
-      
+
       console.log('Updating order:', orderToUpdate);
-      
+
       await updateOrder(order._id, orderToUpdate);
-      
+
       if (Platform.OS === 'web') {
         alert('Order updated successfully!');
         router.back();
       } else {
         Alert.alert(
-          'Success', 
+          'Success',
           'Order updated successfully!',
           [
-            { 
-              text: 'OK', 
-              onPress: () => router.back() 
+            {
+              text: 'OK',
+              onPress: () => router.back()
             }
           ]
         );
       }
-      
+
     } catch (error) {
       console.error('Failed to update order:', error);
-      
+
       let errorMessage = 'Failed to update order. Please try again.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       Alert.alert('Error', errorMessage);
     } finally {
       setIsSaving(false);
@@ -194,16 +194,16 @@ const EditOrder = () => {
     if (field === 'name') {
       const halfMatch = value.match(/\(Half\)/i);
       const fullMatch = value.match(/\(Full\)/i);
-      
+
       setOrder(prev => {
         const newItems = [...prev.items];
         const newItem = { ...newItems[index] };
-        
+
         // Remove any existing plate type from the name
         const cleanName = value.replace(/\(Half\)/i, '').replace(/\(Full\)/i, '').trim();
-        
+
         newItem.name = cleanName;
-        
+
         // Update plateType based on the name
         if (halfMatch) {
           newItem.plateType = 'half';
@@ -213,7 +213,7 @@ const EditOrder = () => {
           // Default to full if no plate type is specified
           newItem.plateType = 'full';
         }
-        
+
         newItems[index] = newItem;
         return { ...prev, items: newItems };
       });
@@ -274,15 +274,15 @@ const EditOrder = () => {
     setOrder(prev => {
       const newItems = [...prev.items];
       const item = { ...newItems[itemIndex] };
-      
+
       if (!item.modifiers) {
         item.modifiers = [];
       }
-      
+
       if (modifier.trim() && !item.modifiers.includes(modifier.trim())) {
         item.modifiers = [...item.modifiers, modifier.trim()];
       }
-      
+
       newItems[itemIndex] = item;
       return { ...prev, items: newItems };
     });
@@ -293,18 +293,18 @@ const EditOrder = () => {
     setOrder(prev => {
       const newItems = [...prev.items];
       const item = { ...newItems[itemIndex] };
-      
+
       if (Array.isArray(item.modifiers)) {
         item.modifiers = item.modifiers.filter((_, i) => i !== modifierIndex);
       }
-      
+
       newItems[itemIndex] = item;
       return { ...prev, items: newItems };
     });
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
@@ -321,7 +321,7 @@ const EditOrder = () => {
       {/* Customer Information Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Customer Information</Text>
-        
+
         {/* Customer Name */}
         <Text style={styles.label}>Name *</Text>
         <TextInput
@@ -360,14 +360,14 @@ const EditOrder = () => {
           <View key={item.id} style={styles.itemContainer}>
             <View style={styles.itemHeader}>
               <Text style={styles.itemNumber}>#{index + 1}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => removeItem(index)}
                 style={styles.removeButton}
               >
                 <Text style={styles.removeButtonText}>×</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <TextInput
                 value={item.name}
@@ -378,7 +378,7 @@ const EditOrder = () => {
                 autoCapitalize="words"
                 returnKeyType="next"
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => togglePlateType(index)}
                 style={[styles.plateButton, { backgroundColor: item.plateType === 'half' ? '#6a1b9a' : '#9c27b0' }]}
               >
@@ -387,7 +387,7 @@ const EditOrder = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.label}>Quantity</Text>
             <TextInput
               value={String(item.quantity || 1)}
@@ -395,13 +395,13 @@ const EditOrder = () => {
               style={styles.input}
               keyboardType="numeric"
             />
-            
+
             <Text style={styles.label}>Modifiers</Text>
             <View style={styles.modifiersContainer}>
               {item.modifiers?.map((modifier, modIndex) => (
                 <View key={modIndex} style={styles.modifierTag}>
                   <Text style={styles.modifierText}>{modifier}</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => removeModifier(index, modIndex)}
                     style={styles.removeModifierButton}
                   >
@@ -409,7 +409,7 @@ const EditOrder = () => {
                   </TouchableOpacity>
                 </View>
               ))}
-              
+
               <View style={styles.addModifierContainer}>
                 <TextInput
                   placeholder="Add modifier"
@@ -430,7 +430,7 @@ const EditOrder = () => {
       {/* Order Details Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Order Details</Text>
-        
+
         {/* Special Instructions */}
         <Text style={styles.label}>Special Instructions</Text>
         <TextInput
@@ -526,17 +526,17 @@ const EditOrder = () => {
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.button, styles.cancelButton]}
           onPress={() => router.back()}
           disabled={isSaving}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
-            styles.button, 
+            styles.button,
             styles.saveButton,
             (isSaving || !order.customer?.name?.trim()) && styles.saveButtonDisabled
           ]}
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  
+
   // Typography
   title: {
     fontSize: 22,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  
+
   // Sections
   section: {
     backgroundColor: '#fff',
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  
+
   // Form Elements
   input: {
     borderWidth: 1,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  
+
   // Items
   itemContainer: {
     backgroundColor: '#f9f9f9',
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: -2,
   },
-  
+
   // Quantity & Price
   quantityRow: {
     flexDirection: 'row',
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 10,
   },
-  
+
   // Modifiers
   modifiersContainer: {
     flexDirection: 'row',
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 0,
   },
-  
+
   // Payment Methods
   paymentMethodContainer: {
     flexDirection: 'row',
@@ -803,7 +803,7 @@ const styles = StyleSheet.create({
     color: '#1976d2',
     fontWeight: '500',
   },
-  
+
   // Retry Button
   retryButton: {
     backgroundColor: '#1976d2',
