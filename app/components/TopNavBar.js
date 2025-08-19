@@ -3,7 +3,6 @@ import { usePathname, useRouter } from 'expo-router';
 import { useContext } from 'react';
 import {
   Image,
-  Alert,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -12,29 +11,25 @@ import {
   View
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { useConfirm } from './ConfirmProvider';
 
 export default function TopNavBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { logout, isAuthenticated, isLoading } = useContext(AuthContext);
+  const { confirm } = useConfirm();
 
   const isActive = (route) => pathname === route || pathname.startsWith(route + '/');
 
-  const confirmLogout = () => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to logout?')) {
-        logout();
-      }
-      return;
-    }
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: logout },
-      ]
-    );
+  const confirmLogout = async () => {
+    const ok = await confirm({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+      danger: true,
+    });
+    if (ok) logout();
   };
 
 

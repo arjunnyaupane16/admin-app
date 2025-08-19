@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { deleteOrder, markOrderAsPaid } from '../utils/orderApi';
+import { useConfirm } from './ConfirmProvider';
 // Using inline styles since the external styles file might not exist
 const styles = {
   orderCard: {
@@ -256,6 +257,7 @@ const OrderCard = ({
   // Navigation
   const navigation = useNavigation();
   const router = useRouter();
+  const { confirm } = useConfirm();
 
   // Animation for expand/collapse
   const rotate = rotateAnim.interpolate({
@@ -398,158 +400,79 @@ const OrderCard = ({
   }, [order.customer?.phone]);
 
   // Handle mark as paid with confirmation
-  const handleMarkAsPaid = useCallback(() => {
-    if (Platform.OS === 'web') {
-      const ok = window.confirm('Mark this order as paid?');
-      if (!ok) return;
-      (async () => {
-        try {
-          setIsProcessing(true);
-          console.log('Marking order as paid:', order._id);
-          const response = await markOrderAsPaid(order._id);
-          console.log('Mark as paid response:', response);
+  const handleMarkAsPaid = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Confirm',
+      message: 'Mark this order as paid?',
+      confirmText: 'Mark as Paid',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+    try {
+      setIsProcessing(true);
+      console.log('Marking order as paid:', order._id);
+      const response = await markOrderAsPaid(order._id);
+      console.log('Mark as paid response:', response);
 
-          if (!response) throw new Error('No response from server');
+      if (!response) throw new Error('No response from server');
 
-          const updatedOrder = {
-            ...order,
-            paymentStatus: 'paid',
-            status: 'confirmed',
-            ...response
-          };
+      const updatedOrder = {
+        ...order,
+        paymentStatus: 'paid',
+        status: 'confirmed',
+        ...response
+      };
 
-          onActionComplete?.(updatedOrder, 'paid');
-        } catch (error) {
-          console.error('Error marking order as paid:', error);
-          alert(error.message || 'Failed to mark order as paid');
-        } finally {
-          setIsProcessing(false);
-        }
-      })();
-      return;
+      onActionComplete?.(updatedOrder, 'paid');
+    } catch (error) {
+      console.error('Error marking order as paid:', error);
+    } finally {
+      setIsProcessing(false);
     }
-    Alert.alert(
-      'Confirm',
-      'Mark this order as paid?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark as Paid', style: 'default', onPress: async () => {
-            try {
-              setIsProcessing(true);
-              console.log('Marking order as paid:', order._id);
-              const response = await markOrderAsPaid(order._id);
-              console.log('Mark as paid response:', response);
-
-              if (!response) throw new Error('No response from server');
-
-              const updatedOrder = {
-                ...order,
-                paymentStatus: 'paid',
-                status: 'confirmed',
-                ...response
-              };
-
-              onActionComplete?.(updatedOrder, 'paid');
-              // No success message, UI will update automatically
-            } catch (error) {
-              console.error('Error marking order as paid:', error);
-              Alert.alert('Error', error.message || 'Failed to mark order as paid');
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      ]
-    );
-  }, [order, onActionComplete]);
+  }, [order, onActionComplete, confirm]);
 
   // Handle delete order with confirmation
-  const handleDelete = useCallback(() => {
-    if (Platform.OS === 'web') {
-      const ok = window.confirm('Are you sure you want to delete this order?');
-      if (!ok) return;
-      (async () => {
-        try {
-          setIsProcessing(true);
-          console.log('Deleting order:', order._id);
-          const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
-          console.log('Delete response:', response);
+  const handleDelete = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Delete Order',
+      message: 'Are you sure you want to delete this order? It will move to Deleted Orders.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      danger: true,
+    });
+    if (!ok) return;
 
-          if (!response) throw new Error('No response from server');
+    try {
+      setIsProcessing(true);
+      console.log('Deleting order:', order._id);
+      const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
+      console.log('Delete response:', response);
 
-          const deletedOrder = {
-            ...order,
-            status: 'deleted',
-            deletedFrom: 'orderCard',
-            ...response
-          };
+      if (!response) throw new Error('No response from server');
 
-          onActionComplete?.(deletedOrder, 'deleted');
+      const deletedOrder = {
+        ...order,
+        status: 'deleted',
+        deletedFrom: 'orderCard',
+        ...response
+      };
 
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true
-          }).start(() => {
-            alert('Order deleted');
-            try { router.push('/deleted-orders'); } catch (_) {}
-          });
-        } catch (error) {
-          console.error('Error deleting order:', error);
-          alert(error.message || 'Failed to delete order');
-          fadeAnim.setValue(1);
-        } finally {
-          setIsProcessing(false);
-        }
-      })();
-      return;
+      onActionComplete?.(deletedOrder, 'deleted');
+
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true
+      }).start(() => {
+        try { router.push('/deleted-orders'); } catch (_) {}
+      });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      fadeAnim.setValue(1);
+    } finally {
+      setIsProcessing(false);
     }
-    Alert.alert(
-      'Delete Order',
-      'Are you sure you want to delete this order?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete', style: 'destructive', onPress: async () => {
-            try {
-              setIsProcessing(true);
-              console.log('Deleting order:', order._id);
-              const response = await deleteOrder(order._id, { deletedFrom: 'orderCard' });
-              console.log('Delete response:', response);
-
-              if (!response) throw new Error('No response from server');
-
-              const deletedOrder = {
-                ...order,
-                status: 'deleted',
-                deletedFrom: 'orderCard',
-                ...response
-              };
-
-              onActionComplete?.(deletedOrder, 'deleted');
-
-              // Fade out animation before deletion
-              Animated.timing(fadeAnim, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true
-              }).start(() => {
-                Alert.alert('Success', 'Order deleted');
-                try { router.push('/deleted-orders'); } catch (_) {}
-              });
-            } catch (error) {
-              console.error('Error deleting order:', error);
-              Alert.alert('Error', error.message || 'Failed to delete order');
-              fadeAnim.setValue(1);
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      ]
-    );
-  }, [order, onActionComplete, fadeAnim]);
+  }, [order, onActionComplete, fadeAnim, confirm, router]);
 
   // Format date and time for display
   const formatDate = useCallback(() => {
