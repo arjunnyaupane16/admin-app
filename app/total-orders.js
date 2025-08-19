@@ -196,7 +196,7 @@ const TotalOrdersScreen = () => {
 
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
-        {['all', 'confirmed', 'pending', 'deleted'].map((key) => (
+        {['all', 'confirmed', 'pending'].map((key) => (
           <TouchableOpacity
             key={key}
             style={[styles.filterButton, activeFilter === key && styles.activeFilter]}

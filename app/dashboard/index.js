@@ -78,9 +78,9 @@ export default function DashboardIndexScreen() {
         }
       });
 
-      // Exclude all soft-deleted from display (regardless of source)
-      const visibleOrders = dateFilteredOrders.filter(order => order.status !== 'deleted');
-      setOrders(visibleOrders);
+      // Keep soft-deleted (including auto-deleted) orders visible on dashboard
+      // so they don't disappear from analytics and listings.
+      setOrders(dateFilteredOrders);
 
       // Compute stats from full filtered list
       const statsData = computeStats(dateFilteredOrders);
@@ -124,7 +124,8 @@ export default function DashboardIndexScreen() {
   const computeStats = (orders) => {
     const confirmed = orders.filter(o => o.status === 'confirmed');
     const pending = orders.filter(o => o.status === 'pending');
-    const deleted = orders.filter(o => o.status === 'deleted' && o.deletedFrom === 'admin');
+    // Count all soft-deleted orders (including auto-deleted), regardless of deletedFrom
+    const deleted = orders.filter(o => o.status === 'deleted');
     const earnings = confirmed.reduce((sum, o) => sum + o.totalAmount, 0);
     const loss = deleted.reduce((sum, o) => sum + o.totalAmount, 0);
 
