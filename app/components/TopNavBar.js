@@ -3,6 +3,7 @@ import { usePathname, useRouter } from 'expo-router';
 import { useContext } from 'react';
 import {
   Image,
+  Alert,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -18,6 +19,23 @@ export default function TopNavBar() {
   const { logout, isAuthenticated, isLoading } = useContext(AuthContext);
 
   const isActive = (route) => pathname === route || pathname.startsWith(route + '/');
+
+  const confirmLogout = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to logout?')) {
+        logout();
+      }
+      return;
+    }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Logout', style: 'destructive', onPress: logout },
+      ]
+    );
+  };
 
 
   if (pathname === '/login' || !pathname) return null;
@@ -73,7 +91,7 @@ export default function TopNavBar() {
 
           {/* Logout button shown only when authenticated and not loading */}
           {!isLoading && isAuthenticated && (
-            <TouchableOpacity onPress={logout} style={styles.navItem}>
+            <TouchableOpacity onPress={confirmLogout} style={styles.navItem}>
               <Ionicons name="log-out" size={22} color="rgba(255,255,255,0.7)" />
               <Text style={styles.navText}>Logout</Text>
             </TouchableOpacity>
@@ -102,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#6a1b9a',
     paddingHorizontal: 15,
     paddingTop: Platform.OS === 'android' ? 8 : Platform.OS === 'web' ? 8 : 40,
-    paddingBottom: 8,  
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.15)',
     ...Platform.select({
@@ -115,7 +133,7 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 75,             // ✅ logo space reserved
+    minWidth: 70,             // ✅ logo space reserved
   },
   titleContainer: {
     flex: 1,
@@ -141,7 +159,7 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,                   // ✅ spacing between nav items (web)
+    gap: 15,                   // ✅ spacing between nav items (web)
   },
   logo: {
     width: 38,
