@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import { getItem } from '../utils/storage';
 import {
   ORDER_API
 } from './constants';
-import { getItem } from '../utils/storage';
 
 // Create axios instance with baseURL and longer timeout (Render free cold starts can take ~50s)
 const baseURL = ORDER_API.replace('/orders', ''); // remove /orders to get base API URL
@@ -28,7 +28,7 @@ const isRetriableError = (err) => {
 
 const requestWithFallbacks = async (tries) => {
   const errors = [];
-  
+
   // Validate input
   if (!Array.isArray(tries) || tries.length === 0) {
     throw new Error('No API endpoints provided to try');
@@ -39,19 +39,19 @@ const requestWithFallbacks = async (tries) => {
       if (!t || typeof t !== 'object') {
         throw new Error('Invalid request configuration');
       }
-      
+
       const { method = 'get', url, data, params = {}, headers = {} } = t;
-      
+
       if (!url) {
         throw new Error('Missing URL in request configuration');
       }
 
       console.log('[API try]', method.toUpperCase(), `${baseURL}${url}`, { params });
-      
-      const config = { 
-        method, 
-        url, 
-        data, 
+
+      const config = {
+        method,
+        url,
+        data,
         params,
         headers: {
           'Content-Type': 'application/json',
@@ -77,33 +77,33 @@ const requestWithFallbacks = async (tries) => {
         }
       }
       throw lastErr || new Error('Unknown request error');
-      
+
     } catch (err) {
       const status = err?.response?.status;
       const body = err?.response?.data || err.message;
       const errorUrl = t?.url || 'unknown';
       const errorMethod = t?.method?.toUpperCase?.() || 'UNKNOWN';
-      
+
       console.warn('[API fallback failed]', errorMethod, errorUrl, status, body);
-      
+
       // Only add to errors if we have valid error info
       if (errorUrl !== 'unknown' || status || body) {
-        errors.push({ 
-          url: errorUrl, 
-          method: errorMethod, 
-          status, 
-          body: body instanceof Error ? body.message : body 
+        errors.push({
+          url: errorUrl,
+          method: errorMethod,
+          status,
+          body: body instanceof Error ? body.message : body
         });
       }
-      
+
       // If we're out of retries, throw the accumulated errors
       if (tries.indexOf(t) === tries.length - 1) {
-        const summary = errors.length > 0 
-          ? errors.map(e => 
-              `${e.method} ${e.url}: ${e.status || 'ERR'} ${typeof e.body === 'string' ? e.body : JSON.stringify(e.body)}`
-            ).join(' | ')
+        const summary = errors.length > 0
+          ? errors.map(e =>
+            `${e.method} ${e.url}: ${e.status || 'ERR'} ${typeof e.body === 'string' ? e.body : JSON.stringify(e.body)}`
+          ).join(' | ')
           : 'No valid error information available';
-          
+
         const error = new Error(`All fallbacks failed: ${summary}`);
         error.attempts = errors;
         throw error;
@@ -248,50 +248,50 @@ export const markOrderAsPaid = async (id) => {
   if (!id) {
     throw new Error('Order ID is required');
   }
-  
+
   try {
     const nowIso = new Date().toISOString();
-    const payload = { 
-      paymentStatus: 'paid', 
-      status: 'confirmed', 
-      isPaid: true, 
-      paidAt: nowIso 
+    const payload = {
+      paymentStatus: 'paid',
+      status: 'confirmed',
+      isPaid: true,
+      paidAt: nowIso
     };
 
     console.log(`Marking order ${id} as paid`, { payload });
-    
+
     const res = await requestWithFallbacks([
       // Try dedicated payment endpoints first
-      { 
-        method: 'post', 
-        url: `/orders/${id}/mark-paid`, 
+      {
+        method: 'post',
+        url: `/orders/${id}/mark-paid`,
         data: { paidAt: nowIso },
         headers: { 'Content-Type': 'application/json' }
       },
-      { 
-        method: 'post', 
+      {
+        method: 'post',
         url: `/orders/${id}/pay`,
         data: { timestamp: nowIso },
         headers: { 'Content-Type': 'application/json' }
       },
       // Fallback to direct update
-      { 
-        method: 'patch', 
+      {
+        method: 'patch',
         url: `/orders/${id}`,
         data: payload,
         headers: { 'Content-Type': 'application/json' }
       },
-      { 
-        method: 'put', 
+      {
+        method: 'put',
         url: `/orders/${id}`,
         data: payload,
         headers: { 'Content-Type': 'application/json' }
       },
     ]);
-    
+
     console.log(`Successfully marked order ${id} as paid`, res.data);
     return res.data;
-    
+
   } catch (error) {
     console.error(`Failed to mark order ${id} as paid:`, error);
     throw error; // Re-throw to be handled by the caller

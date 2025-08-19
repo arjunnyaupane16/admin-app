@@ -95,20 +95,19 @@ const styles = StyleSheet.create({
         width: '100%',
       },
     }),
-  },
-  container: {
+  },container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#6a1b9a',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 12 : Platform.OS === 'web' ? 12 : 50,
-    paddingBottom: 12,
+    paddingHorizontal: 15,
+    paddingTop: Platform.OS === 'android' ? 8 : Platform.OS === 'web' ? 8 : 40,
+    paddingBottom: 8,  
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.15)',
     ...Platform.select({
       web: {
-        maxWidth: 1280,         // ✅ keep nav centered
+        maxWidth: 1280,
         marginHorizontal: 'auto',
       },
     }),
@@ -116,7 +115,7 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    minWidth: 120,             // ✅ logo space reserved
+    minWidth: 75,             // ✅ logo space reserved
   },
   titleContainer: {
     flex: 1,

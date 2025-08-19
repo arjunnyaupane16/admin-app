@@ -175,26 +175,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   scrollContainer: {
-    paddingBottom: 40,
-    paddingHorizontal: 15,
-    paddingTop: 20,
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     ...Platform.select({
       web: {
-        maxWidth: 1280,       // ✅ center content on web
+        maxWidth: 1180,       // center content on web similar to screenshot
         marginHorizontal: 'auto',
         width: '100%',
       },
     }),
   },
   welcomeContainer: {
-    height: 220,
+    height: 230,
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 30,
+    marginBottom: 24,
     position: 'relative',
     ...Platform.select({
       web: {
-        height: 280,         // ✅ larger hero section on web
+        height: 300,         // larger hero section on web to match screenshot
       },
     }),
   },
@@ -208,60 +208,61 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
   },
   welcomeTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     ...Platform.select({
-      web: { fontSize: 30 }, // ✅ bigger text on web
+      web: { fontSize: 28 },
     }),
   },
   welcomeSubtitle: {
     color: 'rgba(255,255,255,0.85)',
-    fontSize: 16,
+    fontSize: 14,
     ...Platform.select({
-      web: { fontSize: 18 },
+      web: { fontSize: 16 },
     }),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 18,
+    marginBottom: 14,
     color: '#333',
     ...Platform.select({
-      web: { fontSize: 20, marginLeft: 4 },
+      web: { fontSize: 18, marginLeft: 4 },
     }),
   },
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    marginBottom: 30,
+    justifyContent: 'space-between',
+    marginBottom: 24,
     ...Platform.select({
       web: {
-        gap: 20,             // ✅ proper spacing on grid
+        gap: 20,
         justifyContent: 'flex-start',
       },
     }),
   },
   actionWrapper: {
-    width: '47%',
-    marginBottom: 15,
+    width: '48%',
+    height: 120,
+    marginBottom: 12,
     ...Platform.select({
       web: {
-        width: '22%',        // 4 per row on large screens
-        minWidth: 220,
-        height: 170,
+        width: '17%',        // 4 per row on large screens
+        minWidth: 160,
+        height: 130,
         cursor: 'pointer',
       },
     }),
   },
   actionCard: {
     flex: 1,
-    aspectRatio: 1,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -280,27 +281,27 @@ const styles = StyleSheet.create({
     }),
   },
   actionIcon: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   actionTitle: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     ...Platform.select({
-      web: { fontSize: 20 },
+      web: { fontSize: 18 },
     }),
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
-    marginBottom: 20,
-    gap: 15,
+    marginBottom: 24,
+    gap: 12,
   },
   summaryCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     flexGrow: 1,
     flexBasis: '30%',
     alignItems: 'center',
@@ -317,24 +318,24 @@ const styles = StyleSheet.create({
     }),
   },
   summaryTitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
-    marginTop: 5,
+    marginTop: 4,
     textAlign: 'center',
   },
   summaryValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#4a148c',
-    marginTop: 6,
-    minHeight: 26,
+    marginTop: 4,
+    minHeight: 22,
     ...Platform.select({
-      web: { fontSize: 22 },
+      web: { fontSize: 20 },
     }),
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
 });
