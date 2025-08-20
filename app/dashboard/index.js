@@ -445,13 +445,42 @@ export default function DashboardIndexScreen() {
       </View>
 
       {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-        />
+        Platform.OS === 'web' ? (
+          <View style={{ marginTop: 8 }}>
+            {/* Use native HTML date input on web for reliable calendar */}
+            <input
+              type="date"
+              max={new Date().toISOString().split('T')[0]}
+              value={selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                const val = e?.target?.value;
+                setShowDatePicker(false);
+                if (val) {
+                  const [y, m, d] = val.split('-').map(Number);
+                  // Create date in local time to avoid timezone shifts
+                  const picked = new Date(y, (m || 1) - 1, d || 1, selectedDate.getHours(), selectedDate.getMinutes(), 0, 0);
+                  setSelectedDate(picked);
+                }
+              }}
+              style={{
+                padding: 10,
+                borderWidth: 1,
+                borderColor: '#e5e7eb',
+                borderRadius: 8,
+                fontSize: 14,
+              }}
+              autoFocus
+            />
+          </View>
+        ) : (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+            maximumDate={new Date()}
+          />
+        )
       )}
 
       {loading ? (

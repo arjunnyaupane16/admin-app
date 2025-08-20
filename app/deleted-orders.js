@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { getItem, setItem } from './utils/storage';
 import {
   ActivityIndicator,
@@ -16,15 +16,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import API functions
-import {
-  fetchDeletedOrders,
-  permanentlyDeleteOrder,
-  restoreOrder,
-} from './utils/orderApi';
+import { fetchDeletedOrders, permanentlyDeleteOrder } from './utils/orderApi';
 import { useConfirm } from './components/ConfirmProvider';
 
 const DeletedOrdersScreen = () => {
-  const router = useRouter();
+  // router removed as restore flow/navigation is no longer supported
   const { refresh } = useLocalSearchParams() || {};
   const [deletedOrders, setDeletedOrders] = useState([]);
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -147,14 +143,7 @@ const DeletedOrdersScreen = () => {
         await loadDeletedOrders();
         setSelectedOrders([]);
 
-        // Keep Total Orders in sync: if restoring or permanently deleting, update recentDeletedIds
-        if (actionFn === restoreOrder) {
-          await removeFromRecentDeleted(targetOrders);
-          // Navigate to Total Orders and refresh so restored items are visible immediately
-          try {
-            router.replace('/total-orders?refresh=1');
-          } catch (_) {}
-        }
+        // Keep Total Orders in sync: remove from recentDeletedIds after permanent deletion
         if (actionFn === permanentlyDeleteOrder) {
           await removeFromRecentDeleted(targetOrders);
         }
@@ -182,9 +171,6 @@ const DeletedOrdersScreen = () => {
     });
     if (ok) await performAction();
   }, [selectedOrders, deletedOrders, loadDeletedOrders, confirm]);
-
-  const restoreSelected = () =>
-    confirmAction('Restore', restoreOrder, 'Orders restored successfully.');
 
   const deleteSelected = () =>
     confirmAction(
@@ -274,13 +260,6 @@ const DeletedOrdersScreen = () => {
 
       {anyDeleted && (
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.button, styles.restore]}
-            onPress={restoreSelected}
-          >
-            <Text style={styles.buttonText}>Restore</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.button, styles.delete]}
             onPress={deleteSelected}
@@ -419,9 +398,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 140,
     alignItems: 'center',
-  },
-  restore: {
-    backgroundColor: '#2e7d32',
   },
   delete: {
     backgroundColor: '#d32f2f',
